@@ -5,9 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { CalendarDays, Car, Users, DollarSign, Clock, AlertTriangle } from 'lucide-react'
 
 interface DashboardStats {
-  totalRidesToday: number
-  totalRidesWeek: number
-  totalRidesMonth: number
+  totalBookingsToday: number
+  totalBookingsWeek: number
+  totalBookingsMonth: number
   revenueToday: number
   revenueWeek: number
   revenueMonth: number
@@ -18,9 +18,9 @@ interface DashboardStats {
 
 export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
-    totalRidesToday: 0,
-    totalRidesWeek: 0,
-    totalRidesMonth: 0,
+    totalBookingsToday: 0,
+    totalBookingsWeek: 0,
+    totalBookingsMonth: 0,
     revenueToday: 0,
     revenueWeek: 0,
     revenueMonth: 0,
@@ -36,34 +36,34 @@ export const Dashboard: React.FC = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      // Fetch rides for different time periods
+      // Fetch bookings for different time periods
       const today = new Date().toISOString().split('T')[0]
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
       const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-      const [ridesResponse, driversResponse] = await Promise.all([
-        supabase.from('rides').select('*'),
+      const [bookingsResponse, driversResponse] = await Promise.all([
+        supabase.from('bookings').select('*'),
         supabase.from('drivers').select('*')
       ])
 
-      const rides = ridesResponse.data || []
+      const bookings = bookingsResponse.data || []
       const drivers = driversResponse.data || []
 
       // Calculate stats
-      const todayRides = rides.filter(ride => ride.booking_time?.startsWith(today))
-      const weekRides = rides.filter(ride => ride.booking_time >= weekAgo)
-      const monthRides = rides.filter(ride => ride.booking_time >= monthAgo)
+      const todayBookings = bookings.filter(booking => booking.created_at?.startsWith(today))
+      const weekBookings = bookings.filter(booking => booking.created_at >= weekAgo)
+      const monthBookings = bookings.filter(booking => booking.created_at >= monthAgo)
 
       setStats({
-        totalRidesToday: todayRides.length,
-        totalRidesWeek: weekRides.length,
-        totalRidesMonth: monthRides.length,
-        revenueToday: todayRides.reduce((sum, ride) => sum + (ride.fare_amount || 0), 0),
-        revenueWeek: weekRides.reduce((sum, ride) => sum + (ride.fare_amount || 0), 0),
-        revenueMonth: monthRides.reduce((sum, ride) => sum + (ride.fare_amount || 0), 0),
+        totalBookingsToday: todayBookings.length,
+        totalBookingsWeek: weekBookings.length,
+        totalBookingsMonth: monthBookings.length,
+        revenueToday: todayBookings.reduce((sum, booking) => sum + (booking.fare_amount || 0), 0),
+        revenueWeek: weekBookings.reduce((sum, booking) => sum + (booking.fare_amount || 0), 0),
+        revenueMonth: monthBookings.reduce((sum, booking) => sum + (booking.fare_amount || 0), 0),
         activeDrivers: drivers.filter(driver => driver.status === 'active').length,
-        pendingBookings: rides.filter(ride => ride.status === 'pending').length,
-        ongoingBookings: rides.filter(ride => ride.status === 'in_progress').length,
+        pendingBookings: bookings.filter(booking => booking.status === 'pending').length,
+        ongoingBookings: bookings.filter(booking => booking.status === 'in_progress').length,
       })
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
@@ -74,22 +74,22 @@ export const Dashboard: React.FC = () => {
 
   const kpiCards = [
     {
-      title: 'Rides Today',
-      value: stats.totalRidesToday,
+      title: 'Bookings Today',
+      value: stats.totalBookingsToday,
       icon: CalendarDays,
-      description: 'Total rides completed today'
+      description: 'Total bookings completed today'
     },
     {
-      title: 'Rides This Week',
-      value: stats.totalRidesWeek,
+      title: 'Bookings This Week',
+      value: stats.totalBookingsWeek,
       icon: CalendarDays,
-      description: 'Total rides this week'
+      description: 'Total bookings this week'
     },
     {
-      title: 'Rides This Month',
-      value: stats.totalRidesMonth,
+      title: 'Bookings This Month',
+      value: stats.totalBookingsMonth,
       icon: CalendarDays,
-      description: 'Total rides this month'
+      description: 'Total bookings this month'
     },
     {
       title: 'Revenue Today',
@@ -122,7 +122,7 @@ export const Dashboard: React.FC = () => {
       description: 'Awaiting driver assignment'
     },
     {
-      title: 'Ongoing Rides',
+      title: 'Ongoing Bookings',
       value: stats.ongoingBookings,
       icon: Car,
       description: 'Currently in progress'

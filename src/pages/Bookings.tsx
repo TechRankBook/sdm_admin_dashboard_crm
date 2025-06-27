@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { supabase, Ride } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+import { Booking } from '@/types/database'
 import { Search, Eye, Edit } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 export const Bookings: React.FC = () => {
-  const [bookings, setBookings] = useState<Ride[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -21,12 +22,12 @@ export const Bookings: React.FC = () => {
   const fetchBookings = async () => {
     try {
       const { data, error } = await supabase
-        .from('rides')
+        .from('bookings')
         .select(`
           *,
           driver:drivers(full_name)
         `)
-        .order('booking_time', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (error) throw error
       setBookings(data || [])
@@ -55,8 +56,8 @@ export const Bookings: React.FC = () => {
   }
 
   const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = booking.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.dropoff_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = (booking.pickup_address || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (booking.dropoff_address || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          booking.id.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter
     return matchesSearch && matchesStatus
@@ -87,7 +88,7 @@ export const Bookings: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Booking Management</h1>
-        <p className="text-gray-600">Manage and track all ride bookings</p>
+        <p className="text-gray-600">Manage and track all bookings</p>
       </div>
 
       {/* Filters */}
@@ -155,17 +156,17 @@ export const Bookings: React.FC = () => {
                           {booking.status.replace('_', ' ').toUpperCase()}
                         </Badge>
                         <span className="text-sm text-gray-500">
-                          {formatDistanceToNow(new Date(booking.booking_time), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(booking.created_at), { addSuffix: true })}
                         </span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <p className="text-sm text-gray-500">Pickup</p>
-                          <p className="font-medium">{booking.pickup_location}</p>
+                          <p className="font-medium">{booking.pickup_address || 'N/A'}</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Dropoff</p>
-                          <p className="font-medium">{booking.dropoff_location}</p>
+                          <p className="font-medium">{booking.dropoff_address || 'N/A'}</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Fare</p>
