@@ -31,7 +31,11 @@ export const useDocuments = (driverFilter?: string) => {
     }
   }
 
-  const updateDriverKYCStatus = async (driverId: string, status: string, rejectionReason?: string) => {
+  const updateDriverKYCStatus = async (
+    driverId: string, 
+    status: 'pending' | 'approved' | 'rejected' | 'resubmission_requested', 
+    rejectionReason?: string
+  ) => {
     try {
       const updates: any = { 
         kyc_status: status,
@@ -49,10 +53,14 @@ export const useDocuments = (driverFilter?: string) => {
 
       if (error) throw error
 
-      // Update local state
+      // Update local state with proper typing
       setDrivers(prev => prev.map(driver => 
         driver.id === driverId 
-          ? { ...driver, kyc_status: status, rejection_reason: rejectionReason || driver.rejection_reason }
+          ? { 
+              ...driver, 
+              kyc_status: status as Driver['kyc_status'],
+              rejection_reason: rejectionReason || driver.rejection_reason 
+            }
           : driver
       ))
 
@@ -85,7 +93,7 @@ export const useDocuments = (driverFilter?: string) => {
         .from('drivers')
         .update({
           [fieldName]: publicUrl,
-          kyc_status: 'pending',
+          kyc_status: 'pending' as Driver['kyc_status'],
           updated_at: new Date().toISOString()
         })
         .eq('id', driverId)
@@ -95,7 +103,11 @@ export const useDocuments = (driverFilter?: string) => {
       // Update local state
       setDrivers(prev => prev.map(driver => 
         driver.id === driverId 
-          ? { ...driver, [fieldName]: publicUrl, kyc_status: 'pending' }
+          ? { 
+              ...driver, 
+              [fieldName]: publicUrl, 
+              kyc_status: 'pending' as Driver['kyc_status']
+            }
           : driver
       ))
 

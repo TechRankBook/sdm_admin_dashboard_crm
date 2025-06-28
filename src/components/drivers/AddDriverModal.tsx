@@ -27,7 +27,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
   const [loading, setLoading] = useState(false)
   
   const { vehicles } = useVehicles()
-  const { addDriver } = useDrivers()
+  const { createDriver } = useDrivers()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,7 +54,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
         profilePictureUrl = publicUrl
       }
 
-      await addDriver({
+      await createDriver({
         ...formData,
         profile_picture_url: profilePictureUrl,
         current_vehicle_id: formData.current_vehicle_id || null,
