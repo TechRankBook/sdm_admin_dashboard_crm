@@ -182,23 +182,21 @@ export const Documents: React.FC = () => {
                           </div>
                           {doc.uploaded ? (
                             <div className="space-y-2">
-                              <Button variant="outline" size="sm" className="w-full">
+                              <Button variant="outline" className="w-full text-xs px-2 py-1 h-7">
                                 <Eye className="h-3 w-3 mr-1" />
                                 Preview
                               </Button>
                               {doc.status === 'pending' && (
                                 <div className="flex space-x-1">
                                   <Button
-                                    size="sm"
-                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-7"
                                     onClick={() => handleApprove('Driver', driver.id, docType)}
                                   >
                                     <Check className="h-3 w-3" />
                                   </Button>
                                   <Button
-                                    size="sm"
                                     variant="destructive"
-                                    className="flex-1"
+                                    className="flex-1 text-xs px-2 py-1 h-7"
                                     onClick={() => {
                                       setSelectedDocument({ type: 'driver', id: driver.id, docType })
                                       setShowRejectModal(true)
@@ -265,23 +263,21 @@ export const Documents: React.FC = () => {
                           </div>
                           {doc.uploaded ? (
                             <div className="space-y-2">
-                              <Button variant="outline" size="sm" className="w-full">
+                              <Button variant="outline" className="w-full text-xs px-2 py-1 h-7">
                                 <Eye className="h-3 w-3 mr-1" />
                                 Preview
                               </Button>
                               {doc.status === 'pending' && (
                                 <div className="flex space-x-1">
                                   <Button
-                                    size="sm"
-                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-7"
                                     onClick={() => handleApprove('Vehicle', vehicle.id, docType)}
                                   >
                                     <Check className="h-3 w-3" />
                                   </Button>
                                   <Button
-                                    size="sm"
                                     variant="destructive"
-                                    className="flex-1"
+                                    className="flex-1 text-xs px-2 py-1 h-7"
                                     onClick={() => {
                                       setSelectedDocument({ type: 'vehicle', id: vehicle.id, docType })
                                       setShowRejectModal(true)
