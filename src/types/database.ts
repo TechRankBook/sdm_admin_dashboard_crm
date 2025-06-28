@@ -22,6 +22,12 @@ export interface Driver {
   total_rides?: number
   current_latitude?: number
   current_longitude?: number
+  current_vehicle_id?: string
+  joined_on?: string
+  kyc_status?: 'pending' | 'approved' | 'rejected' | 'resubmission_requested'
+  license_document_url?: string
+  id_proof_document_url?: string
+  rejection_reason?: string
   created_at: string
   updated_at: string
 }
@@ -68,7 +74,15 @@ export interface Admin {
   email: string
   phone_no: string
   profile_picture_url?: string
+  assigned_region?: string
   can_approve_bookings?: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface User {
+  id: string
+  role: 'admin' | 'customer' | 'driver' | 'vendor'
   created_at: string
   updated_at: string
 }

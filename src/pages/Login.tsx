@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { AlertCircle } from 'lucide-react'
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('')
@@ -20,7 +21,11 @@ export const Login: React.FC = () => {
     try {
       const { error } = await signIn(email, password)
       if (error) {
-        toast.error(error.message)
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password')
+        } else {
+          toast.error(error.message)
+        }
       }
     } catch (error) {
       toast.error('An unexpected error occurred')
@@ -42,6 +47,16 @@ export const Login: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start space-x-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-amber-800">
+              <p className="font-medium">Administrator Access Only</p>
+              <p className="text-xs text-amber-700">
+                Only users with administrator privileges can access this dashboard
+              </p>
+            </div>
+          </div>
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

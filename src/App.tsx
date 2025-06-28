@@ -16,6 +16,7 @@ import { Pricing } from '@/pages/Pricing'
 import { Analytics } from '@/pages/Analytics'
 import { Communication } from '@/pages/Communication'
 import { Documents } from '@/pages/Documents'
+import { AdminProfile } from '@/pages/AdminProfile'
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="analytics" element={<Analytics />} />
               <Route path="communication" element={<Communication />} />
               <Route path="documents" element={<Documents />} />
+              <Route path="profile" element={<AdminProfile />} />
               <Route path="notifications" element={<div className="p-6">Notifications page coming soon...</div>} />
               <Route path="settings" element={<div className="p-6">Settings page coming soon...</div>} />
             </Route>

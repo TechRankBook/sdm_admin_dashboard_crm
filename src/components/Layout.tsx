@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
 
 export const Layout: React.FC = () => {
-  const { user, loading } = useAuth()
+  const { user, userRole, loading } = useAuth()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
@@ -18,11 +18,15 @@ export const Layout: React.FC = () => {
     )
   }
 
-  if (!user && location.pathname !== '/login') {
-    return <Navigate to="/login" replace />
+  // If not authenticated or not admin, redirect to login
+  if (!user || userRole !== 'admin') {
+    if (location.pathname !== '/login') {
+      return <Navigate to="/login" replace />
+    }
   }
 
-  if (user && location.pathname === '/login') {
+  // If authenticated admin is on login page, redirect to dashboard
+  if (user && userRole === 'admin' && location.pathname === '/login') {
     return <Navigate to="/dashboard" replace />
   }
 
