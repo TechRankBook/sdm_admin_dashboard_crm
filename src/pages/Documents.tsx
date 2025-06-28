@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -177,7 +176,7 @@ export const Documents: React.FC = () => {
                             <p className="font-medium text-sm capitalize">
                               {docType === 'idProof' ? 'ID Proof' : docType}
                             </p>
-                            <Badge size="sm" className={getStatusColor(doc.status)}>
+                            <Badge className={`${getStatusColor(doc.status)} text-xs px-2 py-1`}>
                               {doc.status}
                             </Badge>
                           </div>
@@ -260,7 +259,7 @@ export const Documents: React.FC = () => {
                         <div key={docType} className="border border-gray-100 rounded-lg p-4">
                           <div className="flex items-center justify-between mb-2">
                             <p className="font-medium text-sm capitalize">{docType}</p>
-                            <Badge size="sm" className={getStatusColor(doc.status)}>
+                            <Badge className={`${getStatusColor(doc.status)} text-xs px-2 py-1`}>
                               {doc.status}
                             </Badge>
                           </div>
