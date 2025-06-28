@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
-import { CalendarDays, Car, Users, DollarSign, Clock, AlertTriangle } from 'lucide-react'
+import { CalendarDays, Car, Users, DollarSign, Clock, AlertTriangle, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface DashboardStats {
   totalBookingsToday: number
@@ -29,32 +30,65 @@ export const Dashboard: React.FC = () => {
     ongoingBookings: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDashboardStats()
   }, [])
 
   const fetchDashboardStats = async () => {
+    console.log("Dashboard: Fetching dashboard statistics")
+    setLoading(true)
+    setError(null)
+
     try {
-      // Fetch bookings for different time periods
+      // Calculate date ranges
       const today = new Date().toISOString().split('T')[0]
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
       const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-      const [bookingsResponse, driversResponse] = await Promise.all([
+      console.log("Dashboard: Date ranges - Today:", today, "Week ago:", weekAgo, "Month ago:", monthAgo)
+
+      // Fetch all data in parallel with better error handling
+      const [bookingsResponse, driversResponse] = await Promise.allSettled([
         supabase.from('bookings').select('*'),
         supabase.from('drivers').select('*')
       ])
 
-      const bookings = bookingsResponse.data || []
-      const drivers = driversResponse.data || []
+      // Handle bookings data
+      let bookings: any[] = []
+      if (bookingsResponse.status === 'fulfilled') {
+        if (bookingsResponse.value.error) {
+          console.error("Dashboard: Error fetching bookings:", bookingsResponse.value.error.message)
+          throw new Error(`Bookings fetch failed: ${bookingsResponse.value.error.message}`)
+        }
+        bookings = bookingsResponse.value.data || []
+        console.log("Dashboard: Fetched", bookings.length, "bookings")
+      } else {
+        console.error("Dashboard: Bookings request failed:", bookingsResponse.reason)
+        throw new Error("Failed to fetch bookings data")
+      }
 
-      // Calculate stats
+      // Handle drivers data
+      let drivers: any[] = []
+      if (driversResponse.status === 'fulfilled') {
+        if (driversResponse.value.error) {
+          console.error("Dashboard: Error fetching drivers:", driversResponse.value.error.message)
+          throw new Error(`Drivers fetch failed: ${driversResponse.value.error.message}`)
+        }
+        drivers = driversResponse.value.data || []
+        console.log("Dashboard: Fetched", drivers.length, "drivers")
+      } else {
+        console.error("Dashboard: Drivers request failed:", driversResponse.reason)
+        throw new Error("Failed to fetch drivers data")
+      }
+
+      // Calculate statistics
       const todayBookings = bookings.filter(booking => booking.created_at?.startsWith(today))
       const weekBookings = bookings.filter(booking => booking.created_at >= weekAgo)
       const monthBookings = bookings.filter(booking => booking.created_at >= monthAgo)
 
-      setStats({
+      const newStats = {
         totalBookingsToday: todayBookings.length,
         totalBookingsWeek: weekBookings.length,
         totalBookingsMonth: monthBookings.length,
@@ -64,9 +98,15 @@ export const Dashboard: React.FC = () => {
         activeDrivers: drivers.filter(driver => driver.status === 'active').length,
         pendingBookings: bookings.filter(booking => booking.status === 'pending').length,
         ongoingBookings: bookings.filter(booking => booking.status === 'in_progress').length,
-      })
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error)
+      }
+
+      console.log("Dashboard: Calculated stats:", newStats)
+      setStats(newStats)
+      
+    } catch (error: any) {
+      console.error('Dashboard: Error fetching dashboard stats:', error.message)
+      setError(`Failed to load dashboard data: ${error.message}`)
+      toast.error('Failed to load dashboard data. Please refresh the page.')
     } finally {
       setLoading(false)
     }
@@ -132,6 +172,10 @@ export const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600">Loading fleet operations overview...</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 9 }).map((_, i) => (
             <Card key={i} className="animate-pulse">
@@ -144,6 +188,41 @@ export const Dashboard: React.FC = () => {
             </Card>
           ))}
         </div>
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+          <span className="ml-2 text-gray-500">Loading dashboard data...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600">Fleet management overview</p>
+        </div>
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">Error Loading Dashboard</p>
+                <p className="text-sm text-red-500 mt-1">{error}</p>
+                <p className="text-xs text-red-400 mt-2">
+                  Check the browser console (F12) for more details.
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={fetchDashboardStats}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              Retry Loading
+            </button>
+          </CardContent>
+        </Card>
       </div>
     )
   }

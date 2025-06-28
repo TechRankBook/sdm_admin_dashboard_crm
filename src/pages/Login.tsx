@@ -1,34 +1,61 @@
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
+  const { signIn, session, userRole } = useAuth()
+  const navigate = useNavigate()
+
+  // Redirect if already authenticated as admin
+  useEffect(() => {
+    if (session && userRole === 'admin') {
+      console.log("Login: User already authenticated as admin, redirecting to dashboard")
+      navigate('/dashboard', { replace: true })
+    }
+  }, [session, userRole, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("Login: Attempting login for:", email)
+    
+    if (!email || !password) {
+      toast.error('Please fill in all fields')
+      return
+    }
+
     setLoading(true)
 
     try {
       const { error } = await signIn(email, password)
+      
       if (error) {
+        console.error("Login: Authentication error:", error.message)
+        
         if (error.message.includes('Invalid login credentials')) {
           toast.error('Invalid email or password')
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error('Please verify your email address before logging in')
         } else {
           toast.error(error.message)
         }
+      } else {
+        console.log("Login: Authentication successful, waiting for role verification")
+        toast.success('Login successful!')
+        // Navigation will happen automatically via AuthContext when role is verified
       }
-    } catch (error) {
-      toast.error('An unexpected error occurred')
+    } catch (error: any) {
+      console.error("Login: Unexpected error:", error.message)
+      toast.error('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -41,17 +68,17 @@ export const Login: React.FC = () => {
           <div className="mx-auto w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-4">
             <span className="text-white font-bold">FM</span>
           </div>
-          <CardTitle>Admin Login</CardTitle>
+          <CardTitle className="text-2xl">Admin Login</CardTitle>
           <CardDescription>
             Sign in to access the fleet management dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start space-x-2">
-            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start space-x-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-amber-800">
               <p className="font-medium">Administrator Access Only</p>
-              <p className="text-xs text-amber-700">
+              <p className="text-xs text-amber-700 mt-1">
                 Only users with administrator privileges can access this dashboard
               </p>
             </div>
@@ -65,8 +92,10 @@ export const Login: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
                 required
                 disabled={loading}
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -76,14 +105,32 @@ export const Login: React.FC = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
                 required
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </Button>
           </form>
+          
+          <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="text-sm text-blue-800">
+              <p className="font-medium">Debug Information:</p>
+              <p className="text-xs text-blue-600 mt-1">
+                Check browser console (F12) for detailed authentication logs
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -4,46 +4,31 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = 'https://gmualcoqyztvtsqhjlzb.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtdWFsY29xeXp0dnRzcWhqbHpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NDg4NjIsImV4cCI6MjA2NjQyNDg2Mn0.qQxh6IPHrvDQ5Jsma42eHpRTjeG9vpa0rIkErPeCJe0'
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-// Types for our database schema
-export interface Driver {
-  id: string
-  full_name: string
-  phone_no: string
-  email?: string
-  license_number: string
-  profile_picture_url?: string
-  status: 'active' | 'suspended' | 'on_ride' | 'offline'
-  rating: number
-  created_at: string
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Supabase environment variables are not set!")
+  throw new Error("Missing Supabase configuration")
 }
 
-export interface Vehicle {
-  id: string
-  make: string
-  model: string
-  year?: number
-  license_plate: string
-  color?: string
-  capacity?: number
-  type?: string
-  status: 'active' | 'in_maintenance' | 'unavailable'
-  image_url?: string
-  created_at: string
-}
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+  }
+})
 
-export interface Booking {
-  id: string
-  user_id?: string
-  driver_id?: string
-  vehicle_id?: string
-  pickup_address: string
-  dropoff_address: string
-  fare_amount: number
-  status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled'
-  start_time?: string
-  end_time?: string
-  created_at: string
-  driver?: Driver
-}
+// Add initialization check with enhanced debugging
+console.log("Supabase client initializing...")
+supabase.auth.getSession().then(({ data, error }) => {
+    if (error) {
+        console.error("Supabase client initialization error:", error.message)
+        return
+    }
+    if (data.session) {
+        console.log("Supabase client initialized - Active session found:", data.session.user.email)
+    } else {
+        console.log("Supabase client initialized - No active session")
+    }
+}).catch(error => {
+    console.error("Supabase client initialization check failed:", error.message)
+})
