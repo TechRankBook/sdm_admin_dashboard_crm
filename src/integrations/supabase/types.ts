@@ -376,11 +376,15 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          id_proof_document_url: string | null
           joined_on: string | null
+          kyc_status: string | null
+          license_document_url: string | null
           license_number: string
           phone_no: string
           profile_picture_url: string | null
           rating: number | null
+          rejection_reason: string | null
           status: Database["public"]["Enums"]["driver_status_enum"] | null
           total_rides: number | null
           updated_at: string | null
@@ -393,11 +397,15 @@ export type Database = {
           email?: string | null
           full_name: string
           id: string
+          id_proof_document_url?: string | null
           joined_on?: string | null
+          kyc_status?: string | null
+          license_document_url?: string | null
           license_number: string
           phone_no: string
           profile_picture_url?: string | null
           rating?: number | null
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["driver_status_enum"] | null
           total_rides?: number | null
           updated_at?: string | null
@@ -410,11 +418,15 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          id_proof_document_url?: string | null
           joined_on?: string | null
+          kyc_status?: string | null
+          license_document_url?: string | null
           license_number?: string
           phone_no?: string
           profile_picture_url?: string | null
           rating?: number | null
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["driver_status_enum"] | null
           total_rides?: number | null
           updated_at?: string | null
@@ -721,6 +733,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_driver_rides: {
+        Args: { driver_uuid: string }
+        Returns: {
+          id: string
+          pickup_address: string
+          dropoff_address: string
+          fare_amount: number
+          status: Database["public"]["Enums"]["booking_status_enum"]
+          created_at: string
+          start_time: string
+          end_time: string
+        }[]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_enum"]

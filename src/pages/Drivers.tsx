@@ -1,56 +1,36 @@
 
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { supabase } from '@/lib/supabase'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Search, Plus, Edit, Eye, Star, Trash2 } from 'lucide-react'
+import { useDrivers } from '@/hooks/useDrivers'
+import { AddDriverModal } from '@/components/drivers/AddDriverModal'
+import { EditDriverModal } from '@/components/drivers/EditDriverModal'
+import { DriverProfileModal } from '@/components/drivers/DriverProfileModal'
+import { DeleteDriverModal } from '@/components/drivers/DeleteDriverModal'
 import { Driver } from '@/types/database'
-import { Search, Plus, Edit, Eye, Star } from 'lucide-react'
-import { toast } from 'sonner'
 
 export const Drivers: React.FC = () => {
-  const [drivers, setDrivers] = useState<Driver[]>([])
-  const [loading, setLoading] = useState(true)
+  const { drivers, loading } = useDrivers()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
-
-  useEffect(() => {
-    fetchDrivers()
-  }, [])
-
-  const fetchDrivers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('drivers')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setDrivers(data || [])
-    } catch (error) {
-      console.error('Error fetching drivers:', error)
-      toast.error('Failed to fetch drivers')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800 border-green-200'
-      case 'suspended':
+      case 'inactive':
         return 'bg-red-100 text-red-800 border-red-200'
-      case 'on_ride':
+      case 'on_break':
         return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'offline':
-        return 'bg-gray-100 text-gray-800 border-gray-200'
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200'
     }
@@ -71,6 +51,21 @@ export const Drivers: React.FC = () => {
         className={`h-4 w-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
       />
     ))
+  }
+
+  const handleViewDriver = (driver: Driver) => {
+    setSelectedDriver(driver)
+    setShowProfileModal(true)
+  }
+
+  const handleEditDriver = (driver: Driver) => {
+    setSelectedDriver(driver)
+    setShowEditModal(true)
+  }
+
+  const handleDeleteDriver = (driver: Driver) => {
+    setSelectedDriver(driver)
+    setShowDeleteModal(true)
   }
 
   if (loading) {
@@ -97,42 +92,10 @@ export const Drivers: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Driver Management</h1>
           <p className="text-gray-600">Manage and monitor all drivers</p>
         </div>
-        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Driver
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Driver</DialogTitle>
-              <DialogDescription>Enter driver details to register a new driver</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input id="fullName" placeholder="Enter full name" />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" placeholder="Enter phone number" />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="Enter email" />
-              </div>
-              <div>
-                <Label htmlFor="license">License Number</Label>
-                <Input id="license" placeholder="Enter license number" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancel</Button>
-              <Button onClick={() => setShowAddModal(false)}>Save Driver</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setShowAddModal(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Driver
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -154,7 +117,7 @@ export const Drivers: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              {['all', 'active', 'suspended', 'on_ride', 'offline'].map(status => (
+              {['all', 'active', 'inactive', 'on_break'].map(status => (
                 <Button
                   key={status}
                   variant={statusFilter === status ? 'default' : 'outline'}
@@ -177,25 +140,26 @@ export const Drivers: React.FC = () => {
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-lg font-semibold text-gray-600">
+                  <Avatar className="w-12 h-12">
+                    <AvatarImage src={driver.profile_picture_url || ''} />
+                    <AvatarFallback>
                       {driver.full_name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <h3 className="font-semibold text-gray-900">{driver.full_name}</h3>
                     <p className="text-sm text-gray-500">{driver.phone_no}</p>
                   </div>
                 </div>
-                <Badge className={getStatusColor(driver.status)}>
-                  {driver.status.replace('_', ' ').toUpperCase()}
+                <Badge className={getStatusColor(driver.status || 'active')}>
+                  {(driver.status || 'active').replace('_', ' ').toUpperCase()}
                 </Badge>
               </div>
               
               <div className="space-y-2 mb-4">
                 <div className="flex items-center space-x-1">
-                  {renderStars(Math.floor(driver.rating))}
-                  <span className="text-sm text-gray-500 ml-2">({driver.rating.toFixed(1)})</span>
+                  {renderStars(Math.floor(driver.rating || 0))}
+                  <span className="text-sm text-gray-500 ml-2">({(driver.rating || 0).toFixed(1)})</span>
                 </div>
                 <p className="text-sm text-gray-600">
                   Total Rides: {driver.total_rides || 0}
@@ -208,13 +172,16 @@ export const Drivers: React.FC = () => {
               </div>
 
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewDriver(driver)}>
                   <Eye className="h-4 w-4 mr-1" />
                   View
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDriver(driver)}>
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeleteDriver(driver)}>
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
@@ -229,6 +196,30 @@ export const Drivers: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modals */}
+      <AddDriverModal 
+        open={showAddModal} 
+        onOpenChange={setShowAddModal}
+      />
+      
+      <EditDriverModal 
+        open={showEditModal} 
+        onOpenChange={setShowEditModal}
+        driver={selectedDriver}
+      />
+      
+      <DriverProfileModal 
+        open={showProfileModal} 
+        onOpenChange={setShowProfileModal}
+        driver={selectedDriver}
+      />
+      
+      <DeleteDriverModal 
+        open={showDeleteModal} 
+        onOpenChange={setShowDeleteModal}
+        driver={selectedDriver}
+      />
     </div>
   )
 }
