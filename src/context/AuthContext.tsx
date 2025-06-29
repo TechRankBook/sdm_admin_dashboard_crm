@@ -43,14 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('AuthProvider: Error fetching user role:', error.message, error.details)
-        // If user doesn't exist in users table, this is a critical error
-        if (error.code === 'PGRST116') {
-          console.error('AuthProvider: User not found in users table, signing out')
-          await supabase.auth.signOut()
-          toast.error('Access denied: User not found in system')
-          return null
-        }
-        throw error
+        return null
       }
 
       console.log("AuthProvider: User role fetched successfully:", data.role)
@@ -61,52 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // Handle session and role updates
-  const handleSessionUpdate = useCallback(async (newSession: Session | null) => {
-    console.log("AuthProvider: Handling session update:", !!newSession)
-    
-    setSession(newSession)
-    setUser(newSession?.user ?? null)
-
-    if (newSession?.user) {
-      console.log("AuthProvider: Session found, fetching user role for:", newSession.user.email)
-      try {
-        const role = await fetchUserRole(newSession.user.id)
-        
-        if (!role) {
-          console.log("AuthProvider: No role found, clearing session")
-          setUserRole(null)
-          setSession(null)
-          setUser(null)
-          return
-        }
-
-        setUserRole(role)
-        
-        // Check if user has admin role
-        if (role !== 'admin') {
-          console.log("AuthProvider: User does not have admin role, signing out")
-          await supabase.auth.signOut()
-          setUser(null)
-          setSession(null)
-          setUserRole(null)
-          toast.error('Access Denied: You do not have administrator privileges.')
-          return
-        }
-
-        console.log("AuthProvider: Admin user authenticated successfully")
-      } catch (error: any) {
-        console.error('AuthProvider: Error during role check:', error.message)
-        setUserRole(null)
-        await supabase.auth.signOut()
-        toast.error('Access denied: Unable to verify permissions')
-      }
-    } else {
-      console.log("AuthProvider: No session, clearing user data")
-      setUserRole(null)
-    }
-  }, [fetchUserRole])
-
+  // Initialize auth state
   useEffect(() => {
     console.log("AuthProvider: Initializing authentication system")
     
@@ -120,19 +68,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (error) {
           console.error("AuthProvider: Error getting initial session:", error.message)
-          if (isMounted) {
-            setLoading(false)
-          }
-          return
+          // Continue execution, don't return early
         }
 
         console.log("AuthProvider: Initial session check complete:", !!initialSession)
         
         if (isMounted) {
-          await handleSessionUpdate(initialSession)
+          // Always update session state
+          setSession(initialSession)
+          setUser(initialSession?.user ?? null)
+
+          // Try to fetch role if we have a session
+          if (initialSession?.user) {
+            console.log("AuthProvider: Session found, fetching user role for:", initialSession.user.email)
+            try {
+              const role = await fetchUserRole(initialSession.user.id)
+              
+              if (isMounted) {
+                setUserRole(role)
+                
+                if (role !== 'admin') {
+                  console.log("AuthProvider: User does not have admin role")
+                  // Don't sign out automatically, just set role to null
+                  // Let the app handle this in ProtectedRoute
+                }
+              }
+            } catch (error: any) {
+              console.error('AuthProvider: Error during role check:', error.message)
+              if (isMounted) {
+                setUserRole(null)
+              }
+            }
+          } else {
+            console.log("AuthProvider: No session found")
+            setUserRole(null)
+          }
         }
       } catch (error: any) {
         console.error("AuthProvider: Exception during initialization:", error.message)
+        if (isMounted) {
+          setSession(null)
+          setUser(null)
+          setUserRole(null)
+        }
       } finally {
         if (isMounted) {
           console.log("AuthProvider: Setting loading to false")
@@ -141,20 +119,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Set up auth state listener first
+    // Set up auth state listener
     console.log("AuthProvider: Setting up auth state listener")
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         console.log("AuthProvider: Auth state change event:", event)
         
         if (isMounted) {
-          // Don't set loading here - it's only for initial load
-          await handleSessionUpdate(newSession)
+          setSession(newSession)
+          setUser(newSession?.user ?? null)
+
+          if (newSession?.user) {
+            try {
+              const role = await fetchUserRole(newSession.user.id)
+              setUserRole(role)
+            } catch (error: any) {
+              console.error('AuthProvider: Error fetching role on auth change:', error.message)
+              setUserRole(null)
+            }
+          } else {
+            setUserRole(null)
+          }
         }
       }
     )
 
-    // Then initialize
+    // Initialize auth
     initializeAuth()
 
     return () => {
@@ -162,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isMounted = false
       subscription.unsubscribe()
     }
-  }, [handleSessionUpdate])
+  }, [fetchUserRole])
 
   const signIn = async (email: string, password: string) => {
     console.log("AuthProvider: Attempting sign in for:", email)
@@ -179,7 +169,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       console.log("AuthProvider: Sign in successful for:", data.user?.email)
-      // Session update will be handled by onAuthStateChange
       return { error: null }
     } catch (error: any) {
       console.error("AuthProvider: Unexpected sign in error:", error.message)

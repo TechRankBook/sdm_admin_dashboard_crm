@@ -20,8 +20,13 @@ export const ProtectedRoute: React.FC = () => {
     )
   }
 
-  if (!session || userRole !== 'admin') {
-    console.log("ProtectedRoute: Access denied, redirecting to login")
+  if (!session) {
+    console.log("ProtectedRoute: No session, redirecting to login")
+    return <Navigate to="/login" replace />
+  }
+
+  if (userRole !== 'admin') {
+    console.log("ProtectedRoute: User role is not admin, redirecting to login")
     return <Navigate to="/login" replace />
   }
 
