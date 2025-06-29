@@ -13,6 +13,7 @@ export const Layout: React.FC = () => {
   console.log("Layout: Rendering with user:", !!user, "role:", userRole, "loading:", loading)
 
   if (loading) {
+    console.log("Layout: Auth still loading")
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

@@ -9,6 +9,7 @@ export const ProtectedRoute: React.FC = () => {
   console.log("ProtectedRoute: Checking access - Session:", !!session, "Role:", userRole, "Loading:", loading)
 
   if (loading) {
+    console.log("ProtectedRoute: Still loading, showing loading state")
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
