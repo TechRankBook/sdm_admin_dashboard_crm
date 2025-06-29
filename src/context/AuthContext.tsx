@@ -31,131 +31,159 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Memoized function to fetch user role
+  // Add timestamp to logs for debugging
+  const log = (message: string, ...args: any[]) => {
+    console.log(`[AuthProvider ${new Date().toISOString()}]: ${message}`, ...args)
+  }
+
+  // Fetch user role with timeout and error handling
   const fetchUserRole = useCallback(async (userId: string): Promise<string | null> => {
-    console.log("AuthProvider: Fetching user role for ID:", userId)
+    log("Starting role fetch for user:", userId)
+    
     try {
-      const { data, error } = await supabase
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Role fetch timeout')), 10000) // 10 second timeout
+      })
+
+      const queryPromise = supabase
         .from('users')
         .select('role')
         .eq('id', userId)
-        .single()
+        .maybeSingle() // Use maybeSingle to handle no results gracefully
 
-      if (error) {
-        console.error('AuthProvider: Error fetching user role:', error.message, error.details)
+      const result = await Promise.race([queryPromise, timeoutPromise])
+      
+      if (result.error) {
+        log("Database error fetching role:", result.error.message)
         return null
       }
 
-      console.log("AuthProvider: User role fetched successfully:", data.role)
-      return data.role
+      const role = result.data?.role || null
+      log("Role fetch successful:", role)
+      return role
+
     } catch (error: any) {
-      console.error('AuthProvider: Exception in fetchUserRole:', error.message)
+      log("Exception during role fetch:", error.message)
       return null
     }
   }, [])
 
-  // Initialize auth state
-  useEffect(() => {
-    console.log("AuthProvider: Initializing authentication system")
+  // Handle session updates with guaranteed cleanup
+  const handleSessionUpdate = useCallback(async (newSession: Session | null, source: string) => {
+    log(`Session update from ${source}:`, !!newSession)
     
-    let isMounted = true
+    // Always update session and user first
+    setSession(newSession)
+    setUser(newSession?.user ?? null)
+
+    if (newSession?.user) {
+      try {
+        log("Fetching role for authenticated user")
+        const role = await fetchUserRole(newSession.user.id)
+        setUserRole(role)
+        log("Role set successfully:", role)
+      } catch (error: any) {
+        log("Failed to fetch user role:", error.message)
+        setUserRole(null)
+      }
+    } else {
+      log("No session, clearing role")
+      setUserRole(null)
+    }
+  }, [fetchUserRole])
+
+  // Initialize auth with timeout protection
+  useEffect(() => {
+    log("Initializing AuthProvider")
+    let cleanup = false
 
     const initializeAuth = async () => {
       try {
-        console.log("AuthProvider: Getting initial session")
-        
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
-        
-        if (error) {
-          console.error("AuthProvider: Error getting initial session:", error.message)
-          // Continue execution, don't return early
-        }
-
-        console.log("AuthProvider: Initial session check complete:", !!initialSession)
-        
-        if (isMounted) {
-          // Always update session state
-          setSession(initialSession)
-          setUser(initialSession?.user ?? null)
-
-          // Try to fetch role if we have a session
-          if (initialSession?.user) {
-            console.log("AuthProvider: Session found, fetching user role for:", initialSession.user.email)
-            try {
-              const role = await fetchUserRole(initialSession.user.id)
-              
-              if (isMounted) {
-                setUserRole(role)
-                
-                if (role !== 'admin') {
-                  console.log("AuthProvider: User does not have admin role")
-                  // Don't sign out automatically, just set role to null
-                  // Let the app handle this in ProtectedRoute
-                }
-              }
-            } catch (error: any) {
-              console.error('AuthProvider: Error during role check:', error.message)
-              if (isMounted) {
-                setUserRole(null)
-              }
-            }
-          } else {
-            console.log("AuthProvider: No session found")
-            setUserRole(null)
+        // Set up auth listener first
+        log("Setting up auth state listener")
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, newSession) => {
+            if (cleanup) return
+            log("Auth state change event:", event)
+            await handleSessionUpdate(newSession, 'listener')
           }
-        }
-      } catch (error: any) {
-        console.error("AuthProvider: Exception during initialization:", error.message)
-        if (isMounted) {
+        )
+
+        // Get initial session with timeout
+        log("Getting initial session")
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Initial session timeout')), 8000)
+        })
+
+        const sessionPromise = supabase.auth.getSession()
+        
+        try {
+          const { data: { session: initialSession }, error } = await Promise.race([
+            sessionPromise, 
+            timeoutPromise
+          ])
+
+          if (cleanup) return
+
+          if (error) {
+            log("Error getting initial session:", error.message)
+          }
+
+          log("Initial session retrieved:", !!initialSession)
+          await handleSessionUpdate(initialSession, 'initial')
+
+        } catch (error: any) {
+          if (cleanup) return
+          log("Timeout or error during initial session check:", error.message)
+          // Continue anyway - don't block the app
           setSession(null)
           setUser(null)
           setUserRole(null)
         }
+
+        // Cleanup function
+        return () => {
+          log("Cleaning up auth subscription")
+          cleanup = true
+          subscription.unsubscribe()
+        }
+
+      } catch (error: any) {
+        if (cleanup) return
+        log("Fatal error during auth initialization:", error.message)
+        setSession(null)
+        setUser(null)
+        setUserRole(null)
       } finally {
-        if (isMounted) {
-          console.log("AuthProvider: Setting loading to false")
+        if (!cleanup) {
+          log("Auth initialization complete - setting loading to false")
           setLoading(false)
         }
       }
     }
 
-    // Set up auth state listener
-    console.log("AuthProvider: Setting up auth state listener")
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log("AuthProvider: Auth state change event:", event)
-        
-        if (isMounted) {
-          setSession(newSession)
-          setUser(newSession?.user ?? null)
-
-          if (newSession?.user) {
-            try {
-              const role = await fetchUserRole(newSession.user.id)
-              setUserRole(role)
-            } catch (error: any) {
-              console.error('AuthProvider: Error fetching role on auth change:', error.message)
-              setUserRole(null)
-            }
-          } else {
-            setUserRole(null)
-          }
-        }
+    // Add safety timeout to absolutely guarantee loading is cleared
+    const safetyTimeout = setTimeout(() => {
+      if (!cleanup) {
+        log("SAFETY TIMEOUT: Force clearing loading state")
+        setLoading(false)
       }
-    )
+    }, 12000) // 12 second absolute maximum
 
-    // Initialize auth
-    initializeAuth()
+    const cleanupPromise = initializeAuth()
 
     return () => {
-      console.log("AuthProvider: Cleaning up auth subscription")
-      isMounted = false
-      subscription.unsubscribe()
+      cleanup = true
+      clearTimeout(safetyTimeout)
+      cleanupPromise.then(cleanupFn => {
+        if (cleanupFn) cleanupFn()
+      })
     }
-  }, [fetchUserRole])
+  }, [handleSessionUpdate])
 
   const signIn = async (email: string, password: string) => {
-    console.log("AuthProvider: Attempting sign in for:", email)
+    log("Attempting sign in for:", email)
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -164,27 +192,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
       
       if (error) {
-        console.error("AuthProvider: Sign in error:", error.message)
+        log("Sign in error:", error.message)
         return { error }
       }
 
-      console.log("AuthProvider: Sign in successful for:", data.user?.email)
+      log("Sign in successful for:", data.user?.email)
       return { error: null }
     } catch (error: any) {
-      console.error("AuthProvider: Unexpected sign in error:", error.message)
+      log("Unexpected sign in error:", error.message)
       return { error }
     }
   }
 
   const signOut = async () => {
-    console.log("AuthProvider: Signing out user")
+    log("Signing out user")
     try {
       await supabase.auth.signOut()
       setUser(null)
       setSession(null)
       setUserRole(null)
     } catch (error: any) {
-      console.error("AuthProvider: Error during sign out:", error.message)
+      log("Error during sign out:", error.message)
     }
   }
 
@@ -192,9 +220,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAuthenticated = !!session
   const isAdmin = userRole === 'admin'
 
-  // Global loading screen for initial auth check
+  log("Current auth state:", { 
+    hasUser: !!user, 
+    hasSession: !!session, 
+    role: userRole, 
+    loading, 
+    isAuthenticated, 
+    isAdmin 
+  })
+
+  // Show loading screen only during initial load
   if (loading) {
-    console.log("AuthProvider: Rendering loading screen")
+    log("Rendering loading screen")
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -205,8 +242,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       </div>
     )
   }
-
-  console.log("AuthProvider: Rendering children - auth check complete")
 
   const value = {
     user,
