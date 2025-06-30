@@ -33,33 +33,6 @@ export const useDrivers = () => {
     }
   }
 
-  const createDriver = async (driverData: any) => {
-    try {
-      const { data, error } = await supabase
-        .from('drivers')
-        .insert({
-          ...driverData,
-          id: crypto.randomUUID(),
-          status: 'active',
-          joined_on: new Date().toISOString().split('T')[0],
-          rating: 0.0,
-          total_rides: 0
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      
-      setDrivers(prev => [data, ...prev])
-      toast.success('Driver created successfully')
-      return data
-    } catch (error) {
-      console.error('Error creating driver:', error)
-      toast.error('Failed to create driver')
-      throw error
-    }
-  }
-
   const updateDriver = async (driverId: string, updates: Partial<Driver>) => {
     try {
       const { data, error } = await supabase
@@ -147,7 +120,6 @@ export const useDrivers = () => {
   return {
     drivers,
     loading,
-    createDriver,
     updateDriver,
     deleteDriver,
     uploadProfilePicture,
