@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,16 +12,10 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn, session, userRole } = useAuth()
-  const navigate = useNavigate()
+  const { signIn, isAuthenticated, isAdmin } = useAuth()
 
-  // Redirect if already authenticated as admin
-  useEffect(() => {
-    if (session && userRole === 'admin') {
-      console.log("Login: User already authenticated as admin, redirecting to dashboard")
-      navigate('/dashboard', { replace: true })
-    }
-  }, [session, userRole, navigate])
+  // No need to redirect here - AuthenticatedApp handles all routing
+  console.log("Login: Rendering login page - isAuthenticated:", isAuthenticated, "isAdmin:", isAdmin)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,7 +44,7 @@ export const Login: React.FC = () => {
       } else {
         console.log("Login: Authentication successful, waiting for role verification")
         toast.success('Login successful!')
-        // Navigation will happen automatically via AuthContext when role is verified
+        // Navigation will happen automatically via AuthenticatedApp
       }
     } catch (error: any) {
       console.error("Login: Unexpected error:", error.message)
