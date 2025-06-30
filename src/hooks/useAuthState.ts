@@ -2,7 +2,8 @@
 import { useState, useCallback } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { AuthState } from '@/types/auth'
-import { fetchUserRole, authLog } from '@/utils/authUtils'
+import { fetchUserRole } from '@/utils/authDatabase'
+import { authLog } from '@/utils/authLogger'
 
 export const useAuthState = () => {
   const [authState, setAuthState] = useState<AuthState>({

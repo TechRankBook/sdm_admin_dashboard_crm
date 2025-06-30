@@ -3,7 +3,8 @@ import React, { createContext, useContext, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { AuthContextType } from '@/types/auth'
 import { useAuthState } from '@/hooks/useAuthState'
-import { performSignIn, performSignOut, authLog } from '@/utils/authUtils'
+import { performSignIn, performSignOut } from '@/utils/authOperations'
+import { authLog } from '@/utils/authLogger'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
