@@ -4,12 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+import { Search, Plus, Edit, FileText, Car, Eye, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Vehicle } from '@/types/database'
-import { Search, Plus, Edit, FileText, Car } from 'lucide-react'
 import { toast } from 'sonner'
+import { AddVehicleModal } from '@/components/vehicles/AddVehicleModal'
+import { EditVehicleModal } from '@/components/vehicles/EditVehicleModal'
+import { DeleteVehicleModal } from '@/components/vehicles/DeleteVehicleModal'
+import { ServiceLogsModal } from '@/components/vehicles/ServiceLogsModal'
 
 export const Vehicles: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
@@ -17,6 +19,10 @@ export const Vehicles: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showServiceLogsModal, setShowServiceLogsModal] = useState(false)
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
 
   useEffect(() => {
     fetchVehicles()
@@ -43,12 +49,27 @@ export const Vehicles: React.FC = () => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800 border-green-200'
-      case 'in_maintenance':
+      case 'maintenance':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'unavailable':
+      case 'out_of_service':
         return 'bg-red-100 text-red-800 border-red-200'
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  const getTypeDisplayName = (type: string) => {
+    return type.charAt(0).toUpperCase() + type.slice(1)
+  }
+
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case 'out_of_service':
+        return 'Out of Service'
+      case 'maintenance':
+        return 'Maintenance'
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1)
     }
   }
 
@@ -59,6 +80,24 @@ export const Vehicles: React.FC = () => {
     const matchesStatus = statusFilter === 'all' || vehicle.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  const handleEditVehicle = (vehicle: Vehicle) => {
+    console.log('Edit vehicle:', vehicle)
+    setSelectedVehicle(vehicle)
+    setShowEditModal(true)
+  }
+
+  const handleDeleteVehicle = (vehicle: Vehicle) => {
+    console.log('Delete vehicle:', vehicle)
+    setSelectedVehicle(vehicle)
+    setShowDeleteModal(true)
+  }
+
+  const handleViewServiceLogs = (vehicle: Vehicle) => {
+    console.log('View service logs for vehicle:', vehicle)
+    setSelectedVehicle(vehicle)
+    setShowServiceLogsModal(true)
+  }
 
   if (loading) {
     return (
@@ -82,58 +121,12 @@ export const Vehicles: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Vehicle Management</h1>
-          <p className="text-gray-600">Manage and monitor all vehicles</p>
+          <p className="text-gray-600">Manage and monitor all vehicles in your fleet</p>
         </div>
-        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Vehicle
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Vehicle</DialogTitle>
-              <DialogDescription>Enter vehicle details to register a new vehicle</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="make">Make</Label>
-                  <Input id="make" placeholder="e.g., Toyota" />
-                </div>
-                <div>
-                  <Label htmlFor="model">Model</Label>
-                  <Input id="model" placeholder="e.g., Camry" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="year">Year</Label>
-                  <Input id="year" type="number" placeholder="e.g., 2022" />
-                </div>
-                <div>
-                  <Label htmlFor="licensePlate">License Plate</Label>
-                  <Input id="licensePlate" placeholder="e.g., ABC-123" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="color">Color</Label>
-                  <Input id="color" placeholder="e.g., White" />
-                </div>
-                <div>
-                  <Label htmlFor="capacity">Capacity</Label>
-                  <Input id="capacity" type="number" placeholder="e.g., 4" />
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancel</Button>
-              <Button onClick={() => setShowAddModal(false)}>Save Vehicle</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setShowAddModal(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Vehicle
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -155,7 +148,7 @@ export const Vehicles: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              {['all', 'active', 'in_maintenance', 'unavailable'].map(status => (
+              {['all', 'active', 'maintenance', 'out_of_service'].map(status => (
                 <Button
                   key={status}
                   variant={statusFilter === status ? 'default' : 'outline'}
@@ -163,7 +156,7 @@ export const Vehicles: React.FC = () => {
                   onClick={() => setStatusFilter(status)}
                   className="capitalize"
                 >
-                  {status === 'all' ? 'All' : status.replace('_', ' ')}
+                  {status === 'all' ? 'All' : getStatusDisplayName(status)}
                 </Button>
               ))}
             </div>
@@ -178,8 +171,16 @@ export const Vehicles: React.FC = () => {
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                    <Car className="h-6 w-6 text-gray-600" />
+                  <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                    {vehicle.image_url ? (
+                      <img 
+                        src={vehicle.image_url} 
+                        alt={`${vehicle.make} ${vehicle.model}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Car className="h-6 w-6 text-gray-600" />
+                    )}
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">
@@ -188,8 +189,8 @@ export const Vehicles: React.FC = () => {
                     <p className="text-sm text-gray-500">{vehicle.license_plate}</p>
                   </div>
                 </div>
-                <Badge className={getStatusColor(vehicle.status)}>
-                  {vehicle.status.replace('_', ' ').toUpperCase()}
+                <Badge className={getStatusColor(vehicle.status || 'active')}>
+                  {getStatusDisplayName(vehicle.status || 'active')}
                 </Badge>
               </div>
               
@@ -204,18 +205,31 @@ export const Vehicles: React.FC = () => {
                   <p className="text-sm text-gray-600">Capacity: {vehicle.capacity} passengers</p>
                 )}
                 {vehicle.type && (
-                  <p className="text-sm text-gray-600">Type: {vehicle.type}</p>
+                  <p className="text-sm text-gray-600">Type: {getTypeDisplayName(vehicle.type)}</p>
+                )}
+                {vehicle.last_service_date && (
+                  <p className="text-sm text-gray-600">
+                    Last Service: {new Date(vehicle.last_service_date).toLocaleDateString()}
+                  </p>
+                )}
+                {vehicle.next_service_due_date && (
+                  <p className="text-sm text-gray-600">
+                    Next Service Due: {new Date(vehicle.next_service_due_date).toLocaleDateString()}
+                  </p>
                 )}
               </div>
 
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditVehicle(vehicle)}>
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewServiceLogs(vehicle)}>
                   <FileText className="h-4 w-4 mr-1" />
                   Service Logs
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeleteVehicle(vehicle)}>
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
@@ -230,6 +244,33 @@ export const Vehicles: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modals */}
+      <AddVehicleModal 
+        open={showAddModal} 
+        onOpenChange={setShowAddModal}
+        onVehicleAdded={fetchVehicles}
+      />
+      
+      <EditVehicleModal 
+        open={showEditModal} 
+        onOpenChange={setShowEditModal}
+        vehicle={selectedVehicle}
+        onVehicleUpdated={fetchVehicles}
+      />
+      
+      <DeleteVehicleModal 
+        open={showDeleteModal} 
+        onOpenChange={setShowDeleteModal}
+        vehicle={selectedVehicle}
+        onVehicleDeleted={fetchVehicles}
+      />
+      
+      <ServiceLogsModal 
+        open={showServiceLogsModal} 
+        onOpenChange={setShowServiceLogsModal}
+        vehicle={selectedVehicle}
+      />
     </div>
   )
 }

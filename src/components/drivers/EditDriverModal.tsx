@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -37,7 +36,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
       email: '',
       phone_no: '',
       license_number: '',
-      current_vehicle_id: 'none', // Use 'none' instead of empty string
+      current_vehicle_id: 'none',
       status: 'active',
       remove_profile_picture: false
     }
@@ -49,6 +48,12 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
       console.log('Loading driver data:', driver)
       setIsLoading(true)
       
+      // Map database status to form status
+      let formStatus: 'active' | 'inactive' | 'on_break' = 'active'
+      if (driver.status === 'inactive') formStatus = 'inactive'
+      else if (driver.status === 'on_break') formStatus = 'on_break'
+      else formStatus = 'active'
+      
       // Pre-populate form with existing driver data
       form.reset({
         full_name: driver.full_name || '',
@@ -56,7 +61,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
         phone_no: driver.phone_no || '',
         license_number: driver.license_number || '',
         current_vehicle_id: driver.current_vehicle_id || 'none',
-        status: driver.status || 'active',
+        status: formStatus,
         remove_profile_picture: false
       })
       
