@@ -28,9 +28,9 @@ export const editDriverFormSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   phone_no: z.string().min(10, 'Phone number must be at least 10 digits'),
   license_number: z.string().min(5, 'License number must be at least 5 characters'),
-  current_vehicle_id: z.string().optional(),
+  current_vehicle_id: z.string(),
   profile_picture: z.instanceof(File).optional(),
-  status: z.enum(['active', 'suspended', 'on_ride', 'offline']),
+  status: z.enum(['active', 'inactive', 'on_break']),
   remove_profile_picture: z.boolean().optional()
 })
 

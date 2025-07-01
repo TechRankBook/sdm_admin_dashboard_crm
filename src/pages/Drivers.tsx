@@ -54,16 +54,19 @@ export const Drivers: React.FC = () => {
   }
 
   const handleViewDriver = (driver: Driver) => {
+    console.log('View driver:', driver)
     setSelectedDriver(driver)
     setShowProfileModal(true)
   }
 
   const handleEditDriver = (driver: Driver) => {
+    console.log('Edit driver:', driver)
     setSelectedDriver(driver)
     setShowEditModal(true)
   }
 
   const handleDeleteDriver = (driver: Driver) => {
+    console.log('Delete driver:', driver)
     setSelectedDriver(driver)
     setShowDeleteModal(true)
   }

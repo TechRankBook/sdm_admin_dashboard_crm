@@ -28,7 +28,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
   const [currentProfilePicture, setCurrentProfilePicture] = useState<string | null>(null)
   
   const { vehicles } = useVehicles()
-  const { updateDriver, refetch } = useDrivers()
+  const { refetch } = useDrivers()
 
   const form = useForm<EditDriverFormData>({
     resolver: zodResolver(editDriverFormSchema),
@@ -37,7 +37,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
       email: '',
       phone_no: '',
       license_number: '',
-      current_vehicle_id: '',
+      current_vehicle_id: 'none', // Use 'none' instead of empty string
       status: 'active',
       remove_profile_picture: false
     }
@@ -46,6 +46,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
   // Load driver data when modal opens
   useEffect(() => {
     if (driver && open) {
+      console.log('Loading driver data:', driver)
       setIsLoading(true)
       
       // Pre-populate form with existing driver data
@@ -54,7 +55,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
         email: driver.email || '',
         phone_no: driver.phone_no || '',
         license_number: driver.license_number || '',
-        current_vehicle_id: driver.current_vehicle_id || '',
+        current_vehicle_id: driver.current_vehicle_id || 'none',
         status: driver.status || 'active',
         remove_profile_picture: false
       })
@@ -70,6 +71,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
       return
     }
 
+    console.log('Submitting driver update:', data)
     setIsSubmitting(true)
 
     try {
@@ -134,11 +136,13 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
         email: data.email,
         phone_no: data.phone_no,
         license_number: data.license_number,
-        current_vehicle_id: data.current_vehicle_id || null,
+        current_vehicle_id: data.current_vehicle_id === 'none' ? null : data.current_vehicle_id,
         status: data.status,
         profile_picture_url: profilePictureUrl,
         updated_at: new Date().toISOString()
       }
+
+      console.log('Update payload:', updatePayload)
 
       // Update driver in database
       const { error: updateError } = await supabase
@@ -259,9 +263,8 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="suspended">Suspended</SelectItem>
-                        <SelectItem value="on_ride">On Ride</SelectItem>
-                        <SelectItem value="offline">Offline</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="on_break">On Break</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -282,7 +285,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">No vehicle assigned</SelectItem>
+                        <SelectItem value="none">No vehicle assigned</SelectItem>
                         {vehicles.map((vehicle) => (
                           <SelectItem key={vehicle.id} value={vehicle.id}>
                             {vehicle.make} {vehicle.model} - {vehicle.license_plate}
