@@ -29,7 +29,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   const { vehicles } = useVehicles()
-  const { createDriver, refetch } = useDrivers()
+  const { refetch } = useDrivers()
 
   const form = useForm<DriverFormData>({
     resolver: zodResolver(driverFormSchema),

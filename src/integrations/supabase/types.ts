@@ -53,6 +53,45 @@ export type Database = {
           },
         ]
       }
+      booking_cancellations: {
+        Row: {
+          booking_id: string | null
+          cancelled_at: string | null
+          id: string
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          cancelled_at?: string | null
+          id?: string
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          cancelled_at?: string | null
+          id?: string
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_cancellations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_cancellations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_confirmations: {
         Row: {
           admin_id: string | null
@@ -448,6 +487,35 @@ export type Database = {
           },
         ]
       }
+      emergency_contacts: {
+        Row: {
+          contact_name: string | null
+          contact_number: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          contact_name?: string | null
+          contact_number?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          contact_name?: string | null
+          contact_number?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_contacts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           channel:
@@ -549,6 +617,36 @@ export type Database = {
           },
         ]
       }
+      promo_codes: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          discount_type: string | null
+          discount_value: number | null
+          expiry_date: string | null
+          id: string
+          usage_limit: number | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          expiry_date?: string | null
+          id?: string
+          usage_limit?: number | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          expiry_date?: string | null
+          id?: string
+          usage_limit?: number | null
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           booking_id: string | null
@@ -598,6 +696,77 @@ export type Database = {
           {
             foreignKeyName: "reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_passes: {
+        Row: {
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          pass_type: string | null
+          rides_remaining: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          pass_type?: string | null
+          rides_remaining?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          pass_type?: string | null
+          rides_remaining?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_passes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_promo_usages: {
+        Row: {
+          id: string
+          promo_code_id: string | null
+          used_on: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          promo_code_id?: string | null
+          used_on?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          promo_code_id?: string | null
+          used_on?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_promo_usages_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_promo_usages_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -722,6 +891,76 @@ export type Database = {
           {
             foreignKeyName: "vendors_id_fkey"
             columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number | null
+          description: string | null
+          id: string
+          status: string | null
+          transaction_date: string | null
+          type: string | null
+          wallet_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          description?: string | null
+          id?: string
+          status?: string | null
+          transaction_date?: string | null
+          type?: string | null
+          wallet_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          description?: string | null
+          id?: string
+          status?: string | null
+          transaction_date?: string | null
+          type?: string | null
+          wallet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number | null
+          currency: string | null
+          id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          balance?: number | null
+          currency?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          balance?: number | null
+          currency?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
