@@ -411,7 +411,6 @@ export type Database = {
           created_at: string | null
           current_latitude: number | null
           current_longitude: number | null
-          current_vehicle_id: string | null
           email: string | null
           full_name: string
           id: string
@@ -432,7 +431,6 @@ export type Database = {
           created_at?: string | null
           current_latitude?: number | null
           current_longitude?: number | null
-          current_vehicle_id?: string | null
           email?: string | null
           full_name: string
           id: string
@@ -453,7 +451,6 @@ export type Database = {
           created_at?: string | null
           current_latitude?: number | null
           current_longitude?: number | null
-          current_vehicle_id?: string | null
           email?: string | null
           full_name?: string
           id?: string
@@ -471,13 +468,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "drivers_current_vehicle_id_fkey"
-            columns: ["current_vehicle_id"]
-            isOneToOne: false
-            referencedRelation: "vehicles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "drivers_id_fkey"
             columns: ["id"]
@@ -793,6 +783,48 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      vehicle_assignments: {
+        Row: {
+          assigned_on: string | null
+          driver_id: string
+          id: string
+          status: string | null
+          unassigned_on: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          assigned_on?: string | null
+          driver_id: string
+          id?: string
+          status?: string | null
+          unassigned_on?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          assigned_on?: string | null
+          driver_id?: string
+          id?: string
+          status?: string | null
+          unassigned_on?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicles: {
         Row: {

@@ -252,6 +252,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -359,8 +360,8 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Type</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
+                      <FormControl>
+                        <Select value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -392,8 +393,8 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="maintenance">Maintenance</SelectItem>
-                          <SelectItem value="out_of_service">Out of Service</SelectItem>
+                          <SelectItem value="in_maintenance">In Maintenance</SelectItem>
+                          <SelectItem value="unavailable">Unavailable</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

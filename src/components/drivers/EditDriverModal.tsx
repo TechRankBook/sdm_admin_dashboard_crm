@@ -48,10 +48,10 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
       console.log('Loading driver data:', driver)
       setIsLoading(true)
       
-      // Map database status to form status
-      let formStatus: 'active' | 'inactive' | 'on_break' = 'active'
-      if (driver.status === 'inactive') formStatus = 'inactive'
-      else if (driver.status === 'on_break') formStatus = 'on_break'
+      // Map database status to form status - fix the enum mapping
+      let formStatus: 'active' | 'suspended' | 'offline' = 'active'
+      if (driver.status === 'suspended') formStatus = 'suspended'
+      else if (driver.status === 'offline') formStatus = 'offline'
       else formStatus = 'active'
       
       // Pre-populate form with existing driver data
@@ -268,8 +268,8 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="on_break">On Break</SelectItem>
+                        <SelectItem value="suspended">Suspended</SelectItem>
+                        <SelectItem value="offline">Offline</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

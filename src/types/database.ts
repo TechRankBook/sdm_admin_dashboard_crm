@@ -43,6 +43,24 @@ export interface Vehicle {
   type?: string
   status: 'active' | 'in_maintenance' | 'unavailable'
   image_url?: string
+  insurance_document_url?: string
+  registration_document_url?: string
+  pollution_certificate_url?: string
+  last_service_date?: string
+  next_service_due_date?: string
+  current_driver_id?: string
+  vendor_id?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface VehicleMaintenanceLog {
+  id: string
+  vehicle_id: string
+  maintenance_date: string
+  description?: string
+  cost?: number
+  performed_by?: string
   created_at: string
   updated_at: string
 }
