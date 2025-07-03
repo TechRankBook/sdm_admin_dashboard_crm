@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Star, Phone, Mail, CreditCard, MapPin, Car } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { Driver } from '@/types/database'
+import { Driver, Vehicle } from '@/types/database'
 
 interface DriverProfileModalProps {
   open: boolean
@@ -15,18 +15,8 @@ interface DriverProfileModalProps {
   driver: Driver | null
 }
 
-interface AssignedVehicle {
-  id: string
-  make: string
-  model: string
-  license_plate: string
-  year: number
-  color: string
-  type: string
-}
-
 export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({ open, onOpenChange, driver }) => {
-  const [assignedVehicles, setAssignedVehicles] = useState<AssignedVehicle[]>([])
+  const [assignedVehicles, setAssignedVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -40,26 +30,15 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({ open, on
     
     setLoading(true)
     try {
+      // Fetch vehicles where current_driver_id matches this driver's ID
       const { data, error } = await supabase
-        .from('vehicle_assignments')
-        .select(`
-          vehicles (
-            id,
-            make,
-            model,
-            license_plate,
-            year,
-            color,
-            type
-          )
-        `)
-        .eq('driver_id', driver.id)
-        .eq('status', 'active')
+        .from('vehicles')
+        .select('*')
+        .eq('current_driver_id', driver.id)
 
       if (error) throw error
       
-      const vehicles = data?.map(item => item.vehicles).filter(Boolean) || []
-      setAssignedVehicles(vehicles as AssignedVehicle[])
+      setAssignedVehicles(data || [])
     } catch (error) {
       console.error('Error fetching assigned vehicles:', error)
     } finally {
@@ -75,6 +54,10 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({ open, on
         return 'bg-red-100 text-red-800 border-red-200'
       case 'offline':
         return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800 border-gray-200'
+      case 'on_break':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200'
     }

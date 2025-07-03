@@ -17,7 +17,7 @@ export interface Driver {
   email?: string
   license_number: string
   profile_picture_url?: string
-  status: 'active' | 'suspended' | 'on_ride' | 'offline'
+  status: 'active' | 'inactive' | 'on_break' | 'suspended' | 'on_ride' | 'offline'
   rating: number
   total_rides?: number
   current_latitude?: number
@@ -40,8 +40,8 @@ export interface Vehicle {
   license_plate: string
   color?: string
   capacity?: number
-  type?: string
-  status: 'active' | 'in_maintenance' | 'unavailable'
+  type?: 'sedan' | 'suv' | 'bike' | 'luxury' | 'van'
+  status: 'active' | 'maintenance' | 'out_of_service' | 'in_maintenance' | 'unavailable'
   image_url?: string
   insurance_document_url?: string
   registration_document_url?: string
@@ -77,8 +77,9 @@ export interface Booking {
   dropoff_latitude?: number
   dropoff_longitude?: number
   fare_amount: number
-  status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled'
-  payment_status?: 'pending' | 'completed' | 'failed'
+  status: 'pending' | 'accepted' | 'started' | 'completed' | 'cancelled' | 'no_driver' | 'in_progress'
+  payment_status?: 'pending' | 'paid' | 'failed' | 'completed'
+  ride_type?: 'single' | 'shared' | 'rent'
   start_time?: string
   end_time?: string
   created_at: string
