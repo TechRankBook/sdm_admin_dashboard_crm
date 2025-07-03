@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -360,8 +361,8 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Type</FormLabel>
-                      <FormControl>
-                        <Select value={field.value} onValueChange={field.onChange}>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -393,8 +394,8 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="in_maintenance">In Maintenance</SelectItem>
-                          <SelectItem value="unavailable">Unavailable</SelectItem>
+                          <SelectItem value="maintenance">Maintenance</SelectItem>
+                          <SelectItem value="out_of_service">Out of Service</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -511,7 +512,6 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
                   />
                 </div>
 
-                {/* Similar sections for other documents */}
                 {/* Insurance Document */}
                 <div className="space-y-2">
                   <Label>Insurance Document</Label>
