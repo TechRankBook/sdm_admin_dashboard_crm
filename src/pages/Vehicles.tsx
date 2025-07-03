@@ -49,9 +49,9 @@ export const Vehicles: React.FC = () => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800 border-green-200'
-      case 'in_maintenance':
+      case 'maintenance':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'unavailable':
+      case 'out_of_service':
         return 'bg-red-100 text-red-800 border-red-200'
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200'
@@ -64,10 +64,10 @@ export const Vehicles: React.FC = () => {
 
   const getStatusDisplayName = (status: string) => {
     switch (status) {
-      case 'in_maintenance':
-        return 'In Maintenance'
-      case 'unavailable':
-        return 'Unavailable'
+      case 'maintenance':
+        return 'Maintenance'
+      case 'out_of_service':
+        return 'Out of Service'
       default:
         return status.charAt(0).toUpperCase() + status.slice(1)
     }
@@ -148,7 +148,7 @@ export const Vehicles: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              {['all', 'active', 'in_maintenance', 'unavailable'].map(status => (
+              {['all', 'active', 'maintenance', 'out_of_service'].map(status => (
                 <Button
                   key={status}
                   variant={statusFilter === status ? 'default' : 'outline'}

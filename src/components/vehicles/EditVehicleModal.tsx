@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -66,6 +65,11 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
       console.log('Loading vehicle data:', vehicle)
       setIsLoading(true)
       
+      // Map the vehicle status to the form schema status
+      const mappedStatus = vehicle.status === 'in_maintenance' ? 'maintenance' : 
+                          vehicle.status === 'unavailable' ? 'out_of_service' : 
+                          vehicle.status || 'active'
+      
       form.reset({
         make: vehicle.make || '',
         model: vehicle.model || '',
@@ -74,7 +78,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
         color: vehicle.color || '',
         capacity: vehicle.capacity || 1,
         type: vehicle.type || 'sedan',
-        status: vehicle.status || 'active',
+        status: mappedStatus as 'active' | 'maintenance' | 'out_of_service',
         current_driver_id: vehicle.current_driver_id || 'none',
         last_service_date: vehicle.last_service_date || '',
         next_service_due_date: vehicle.next_service_due_date || '',
