@@ -12,15 +12,7 @@ export const useDrivers = () => {
     try {
       const { data, error } = await supabase
         .from('drivers')
-        .select(`
-          *,
-          vehicles:current_vehicle_id (
-            id,
-            make,
-            model,
-            license_plate
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (error) throw error

@@ -6,7 +6,6 @@ export const driverFormSchema = z.object({
   email: z.string().email('Valid email is required').optional().or(z.literal('')),
   phone_no: z.string().min(1, 'Phone number is required'),
   license_number: z.string().min(1, 'License number is required'),
-  current_vehicle_id: z.string().optional(),
   status: z.enum(['active', 'suspended', 'offline']),
   profile_picture: z.instanceof(File).optional(),
 })
@@ -16,7 +15,6 @@ export const editDriverFormSchema = z.object({
   email: z.string().email('Valid email is required').optional().or(z.literal('')),
   phone_no: z.string().min(1, 'Phone number is required'),
   license_number: z.string().min(1, 'License number is required'),
-  current_vehicle_id: z.string(),
   status: z.enum(['active', 'suspended', 'offline']),
   profile_picture: z.instanceof(File).optional(),
   remove_profile_picture: z.boolean().optional(),

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,7 +12,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { Driver } from '@/types/database'
-import { useVehicles } from '@/hooks/useVehicles'
 import { useDrivers } from '@/hooks/useDrivers'
 import { editDriverFormSchema, type EditDriverFormData } from './DriverFormSchema'
 
@@ -26,7 +26,6 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentProfilePicture, setCurrentProfilePicture] = useState<string | null>(null)
   
-  const { vehicles } = useVehicles()
   const { refetch } = useDrivers()
 
   const form = useForm<EditDriverFormData>({
@@ -36,7 +35,6 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
       email: '',
       phone_no: '',
       license_number: '',
-      current_vehicle_id: 'none',
       status: 'active',
       remove_profile_picture: false
     }
@@ -48,7 +46,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
       console.log('Loading driver data:', driver)
       setIsLoading(true)
       
-      // Map database status to form status - fix the enum mapping
+      // Map database status to form status
       let formStatus: 'active' | 'suspended' | 'offline' = 'active'
       if (driver.status === 'suspended') formStatus = 'suspended'
       else if (driver.status === 'offline') formStatus = 'offline'
@@ -60,7 +58,6 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
         email: driver.email || '',
         phone_no: driver.phone_no || '',
         license_number: driver.license_number || '',
-        current_vehicle_id: driver.current_vehicle_id || 'none',
         status: formStatus,
         remove_profile_picture: false
       })
@@ -95,7 +92,6 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
               .remove([fileName])
           } catch (error) {
             console.error('Error removing old profile picture:', error)
-            // Continue with update even if file deletion fails
           }
         }
         profilePictureUrl = null
@@ -124,7 +120,6 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
               .remove([oldFileName])
           } catch (error) {
             console.error('Error removing old profile picture:', error)
-            // Continue with update even if old file deletion fails
           }
         }
 
@@ -141,7 +136,6 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
         email: data.email,
         phone_no: data.phone_no,
         license_number: data.license_number,
-        current_vehicle_id: data.current_vehicle_id === 'none' ? null : data.current_vehicle_id,
         status: data.status,
         profile_picture_url: profilePictureUrl,
         updated_at: new Date().toISOString()
@@ -162,7 +156,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
       }
 
       toast.success('Driver updated successfully!')
-      refetch() // Refresh the drivers list
+      refetch()
       onOpenChange(false)
     } catch (error) {
       console.error('Unexpected error updating driver:', error)
@@ -270,32 +264,6 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="suspended">Suspended</SelectItem>
                         <SelectItem value="offline">Offline</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="current_vehicle_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assign Vehicle</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a vehicle" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">No vehicle assigned</SelectItem>
-                        {vehicles.map((vehicle) => (
-                          <SelectItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.make} {vehicle.model} - {vehicle.license_plate}
-                          </SelectItem>
-                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
