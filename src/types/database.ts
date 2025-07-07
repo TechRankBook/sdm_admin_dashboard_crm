@@ -1,4 +1,3 @@
-
 export interface Customer {
   id: string
   full_name: string
