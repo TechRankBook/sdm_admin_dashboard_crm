@@ -33,7 +33,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ open, onOpenCh
       capacity: 1,
       type: 'sedan',
       status: 'active',
-      current_driver_id: 'none',
+      assigned_driver_id: 'none',
       last_service_date: '',
       next_service_due_date: '',
     }
@@ -70,7 +70,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ open, onOpenCh
         capacity: data.capacity,
         type: data.type,
         status: data.status,
-        current_driver_id: data.current_driver_id === 'none' ? null : data.current_driver_id,
+        assigned_driver_id: data.assigned_driver_id === 'none' ? null : data.assigned_driver_id,
         last_service_date: data.last_service_date || null,
         next_service_due_date: data.next_service_due_date || null,
       }
@@ -310,7 +310,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ open, onOpenCh
 
             <FormField
               control={form.control}
-              name="current_driver_id"
+              name="assigned_driver_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign Driver (Optional)</FormLabel>

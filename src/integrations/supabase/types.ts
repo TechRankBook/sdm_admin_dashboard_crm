@@ -789,6 +789,56 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          is_resolved: boolean | null
+          priority: string | null
+          resolved_date: string | null
+          title: string
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          priority?: string | null
+          resolved_date?: string | null
+          title: string
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          priority?: string | null
+          resolved_date?: string | null
+          title?: string
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_alerts_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_assignments: {
         Row: {
           assigned_on: string | null
@@ -831,16 +881,181 @@ export type Database = {
           },
         ]
       }
+      vehicle_documents: {
+        Row: {
+          created_at: string | null
+          document_type: string
+          document_url: string | null
+          expiry_date: string | null
+          id: string
+          issue_date: string | null
+          notes: string | null
+          updated_at: string | null
+          vehicle_id: string
+          verified: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          updated_at?: string | null
+          vehicle_id: string
+          verified?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type?: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          updated_at?: string | null
+          vehicle_id?: string
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_documents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_maintenance_logs: {
+        Row: {
+          bill_document_url: string | null
+          cost: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          maintenance_date: string
+          next_service_due_date: string | null
+          next_service_due_km: number | null
+          odometer_reading: number | null
+          performed_by: string | null
+          service_center: string | null
+          service_type: string | null
+          updated_at: string | null
+          vehicle_id: string
+          work_performed: string | null
+        }
+        Insert: {
+          bill_document_url?: string | null
+          cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          maintenance_date: string
+          next_service_due_date?: string | null
+          next_service_due_km?: number | null
+          odometer_reading?: number | null
+          performed_by?: string | null
+          service_center?: string | null
+          service_type?: string | null
+          updated_at?: string | null
+          vehicle_id: string
+          work_performed?: string | null
+        }
+        Update: {
+          bill_document_url?: string | null
+          cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          maintenance_date?: string
+          next_service_due_date?: string | null
+          next_service_due_km?: number | null
+          odometer_reading?: number | null
+          performed_by?: string | null
+          service_center?: string | null
+          service_type?: string | null
+          updated_at?: string | null
+          vehicle_id?: string
+          work_performed?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_maintenance_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_performance: {
+        Row: {
+          created_at: string | null
+          distance_traveled: number | null
+          fuel_consumed: number | null
+          fuel_economy: number | null
+          id: string
+          notes: string | null
+          odometer_reading: number | null
+          recorded_date: string
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          distance_traveled?: number | null
+          fuel_consumed?: number | null
+          fuel_economy?: number | null
+          id?: string
+          notes?: string | null
+          odometer_reading?: number | null
+          recorded_date?: string
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string | null
+          distance_traveled?: number | null
+          fuel_consumed?: number | null
+          fuel_economy?: number | null
+          id?: string
+          notes?: string | null
+          odometer_reading?: number | null
+          recorded_date?: string
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_performance_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicles: {
         Row: {
+          average_fuel_economy: number | null
           capacity: number | null
           color: string | null
           created_at: string | null
+          current_driver_id: string | null
+          current_odometer: number | null
           id: string
           image_url: string | null
+          insurance_document_url: string | null
+          last_service_date: string | null
           license_plate: string | null
           make: string | null
           model: string | null
+          monthly_distance: number | null
+          next_service_due_date: string | null
+          pollution_certificate_url: string | null
+          registration_document_url: string | null
           status: Database["public"]["Enums"]["vehicle_status_enum"] | null
           type: Database["public"]["Enums"]["vehicle_type_enum"] | null
           updated_at: string | null
@@ -848,14 +1063,23 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          average_fuel_economy?: number | null
           capacity?: number | null
           color?: string | null
           created_at?: string | null
+          current_driver_id?: string | null
+          current_odometer?: number | null
           id?: string
           image_url?: string | null
+          insurance_document_url?: string | null
+          last_service_date?: string | null
           license_plate?: string | null
           make?: string | null
           model?: string | null
+          monthly_distance?: number | null
+          next_service_due_date?: string | null
+          pollution_certificate_url?: string | null
+          registration_document_url?: string | null
           status?: Database["public"]["Enums"]["vehicle_status_enum"] | null
           type?: Database["public"]["Enums"]["vehicle_type_enum"] | null
           updated_at?: string | null
@@ -863,14 +1087,23 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          average_fuel_economy?: number | null
           capacity?: number | null
           color?: string | null
           created_at?: string | null
+          current_driver_id?: string | null
+          current_odometer?: number | null
           id?: string
           image_url?: string | null
+          insurance_document_url?: string | null
+          last_service_date?: string | null
           license_plate?: string | null
           make?: string | null
           model?: string | null
+          monthly_distance?: number | null
+          next_service_due_date?: string | null
+          pollution_certificate_url?: string | null
+          registration_document_url?: string | null
           status?: Database["public"]["Enums"]["vehicle_status_enum"] | null
           type?: Database["public"]["Enums"]["vehicle_type_enum"] | null
           updated_at?: string | null
@@ -878,6 +1111,13 @@ export type Database = {
           year?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "vehicles_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vehicles_vendor_id_fkey"
             columns: ["vendor_id"]
@@ -1042,7 +1282,12 @@ export type Database = {
       notification_channel_enum: "in_app" | "sms" | "whatsapp" | "call"
       payment_status_enum: "pending" | "paid" | "failed"
       user_role_enum: "customer" | "driver" | "admin" | "vendor"
-      vehicle_status_enum: "active" | "maintenance" | "out_of_service"
+      vehicle_status_enum:
+        | "active"
+        | "maintenance"
+        | "out_of_service"
+        | "in_maintenance"
+        | "unavailable"
       vehicle_type_enum: "sedan" | "suv" | "bike" | "luxury" | "van"
     }
     CompositeTypes: {
@@ -1186,7 +1431,13 @@ export const Constants = {
       notification_channel_enum: ["in_app", "sms", "whatsapp", "call"],
       payment_status_enum: ["pending", "paid", "failed"],
       user_role_enum: ["customer", "driver", "admin", "vendor"],
-      vehicle_status_enum: ["active", "maintenance", "out_of_service"],
+      vehicle_status_enum: [
+        "active",
+        "maintenance",
+        "out_of_service",
+        "in_maintenance",
+        "unavailable",
+      ],
       vehicle_type_enum: ["sedan", "suv", "bike", "luxury", "van"],
     },
   },

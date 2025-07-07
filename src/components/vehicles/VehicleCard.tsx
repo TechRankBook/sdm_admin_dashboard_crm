@@ -79,13 +79,12 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
         </div>
 
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" className="flex-1" onClick={() => onEdit(vehicle)}>
-            <Edit className="h-4 w-4 mr-1" />
-            Edit
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => window.location.href = `/vehicles/${vehicle.id}`}>
+            <Car className="h-4 w-4 mr-1" />
+            View Details
           </Button>
-          <Button variant="outline" size="sm" className="flex-1" onClick={() => onViewServiceLogs(vehicle)}>
-            <FileText className="h-4 w-4 mr-1" />
-            Service Logs
+          <Button variant="outline" size="sm" onClick={() => onEdit(vehicle)}>
+            <Edit className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => onDelete(vehicle)}>
             <Trash2 className="h-4 w-4" />

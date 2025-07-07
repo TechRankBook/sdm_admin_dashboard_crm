@@ -49,7 +49,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
       capacity: 1,
       type: 'sedan',
       status: 'active',
-      current_driver_id: 'none',
+      assigned_driver_id: 'none',
       last_service_date: '',
       next_service_due_date: '',
       remove_image: false,
@@ -84,7 +84,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
         capacity: vehicle.capacity || 1,
         type: vehicle.type || 'sedan',
         status: formStatus,
-        current_driver_id: vehicle.current_driver_id || 'none',
+        assigned_driver_id: vehicle.assigned_driver_id || 'none',
         last_service_date: vehicle.last_service_date || '',
         next_service_due_date: vehicle.next_service_due_date || '',
         remove_image: false,
@@ -159,7 +159,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
         capacity: data.capacity,
         type: data.type,
         status: dbStatus,
-        current_driver_id: data.current_driver_id === 'none' ? null : data.current_driver_id,
+        assigned_driver_id: data.assigned_driver_id === 'none' ? null : data.assigned_driver_id,
         last_service_date: data.last_service_date || null,
         next_service_due_date: data.next_service_due_date || null,
         updated_at: new Date().toISOString()
@@ -424,7 +424,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
 
               <FormField
                 control={form.control}
-                name="current_driver_id"
+                name="assigned_driver_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Assign Driver</FormLabel>

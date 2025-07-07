@@ -21,7 +21,6 @@ export interface Driver {
   total_rides?: number
   current_latitude?: number
   current_longitude?: number
-  current_vehicle_id?: string
   joined_on?: string
   kyc_status?: 'pending' | 'approved' | 'rejected' | 'resubmission_requested'
   license_document_url?: string
@@ -47,8 +46,51 @@ export interface Vehicle {
   pollution_certificate_url?: string
   last_service_date?: string
   next_service_due_date?: string
-  current_driver_id?: string
+  assigned_driver_id?: string
   vendor_id?: string
+  current_odometer?: number
+  average_fuel_economy?: number
+  monthly_distance?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface VehicleDocument {
+  id: string
+  vehicle_id: string
+  document_type: 'registration' | 'insurance' | 'pollution_certificate' | 'fitness_certificate'
+  document_url?: string
+  issue_date?: string
+  expiry_date?: string
+  verified: boolean
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface VehiclePerformance {
+  id: string
+  vehicle_id: string
+  recorded_date: string
+  odometer_reading?: number
+  fuel_consumed?: number
+  distance_traveled?: number
+  fuel_economy?: number
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface VehicleAlert {
+  id: string
+  vehicle_id: string
+  alert_type: 'service_due' | 'document_expiry' | 'insurance_expiry' | 'pollution_expiry' | 'fitness_expiry' | 'custom'
+  title: string
+  description?: string
+  due_date?: string
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  is_resolved: boolean
+  resolved_date?: string
   created_at: string
   updated_at: string
 }
@@ -60,6 +102,13 @@ export interface VehicleMaintenanceLog {
   description?: string
   cost?: number
   performed_by?: string
+  service_type?: string
+  odometer_reading?: number
+  next_service_due_date?: string
+  next_service_due_km?: number
+  work_performed?: string
+  service_center?: string
+  bill_document_url?: string
   created_at: string
   updated_at: string
 }
