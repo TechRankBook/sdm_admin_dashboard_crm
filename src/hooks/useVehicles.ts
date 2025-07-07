@@ -28,5 +28,5 @@ export const useVehicles = () => {
     fetchVehicles()
   }, [])
 
-  return { vehicles, loading }
+  return { vehicles, loading, refetch: fetchVehicles }
 }

@@ -65,10 +65,15 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
       console.log('Loading vehicle data:', vehicle)
       setIsLoading(true)
       
-      // Map the vehicle status to the form schema status
-      const mappedStatus = vehicle.status === 'in_maintenance' ? 'maintenance' : 
-                          vehicle.status === 'unavailable' ? 'out_of_service' : 
-                          vehicle.status || 'active'
+      // Map database status values to form values
+      let formStatus: 'active' | 'maintenance' | 'out_of_service' = 'active'
+      if (vehicle.status === 'maintenance' || vehicle.status === 'in_maintenance') {
+        formStatus = 'maintenance'
+      } else if (vehicle.status === 'out_of_service' || vehicle.status === 'unavailable') {
+        formStatus = 'out_of_service'
+      } else if (vehicle.status === 'active') {
+        formStatus = 'active'
+      }
       
       form.reset({
         make: vehicle.make || '',
@@ -78,7 +83,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
         color: vehicle.color || '',
         capacity: vehicle.capacity || 1,
         type: vehicle.type || 'sedan',
-        status: mappedStatus as 'active' | 'maintenance' | 'out_of_service',
+        status: formStatus,
         current_driver_id: vehicle.current_driver_id || 'none',
         last_service_date: vehicle.last_service_date || '',
         next_service_due_date: vehicle.next_service_due_date || '',
@@ -136,6 +141,15 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
 
     try {
       const vehicleId = vehicle.id
+      
+      // Map form status to database status
+      let dbStatus = data.status
+      if (data.status === 'maintenance') {
+        dbStatus = 'maintenance'
+      } else if (data.status === 'out_of_service') {
+        dbStatus = 'out_of_service'
+      }
+      
       let updateData: any = {
         make: data.make,
         model: data.model,
@@ -144,7 +158,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
         color: data.color,
         capacity: data.capacity,
         type: data.type,
-        status: data.status,
+        status: dbStatus,
         current_driver_id: data.current_driver_id === 'none' ? null : data.current_driver_id,
         last_service_date: data.last_service_date || null,
         next_service_due_date: data.next_service_due_date || null,
