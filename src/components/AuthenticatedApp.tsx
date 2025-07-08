@@ -6,6 +6,7 @@ import { Layout } from '@/components/Layout'
 import { Login } from '@/pages/Login'
 import { Dashboard } from '@/pages/Dashboard'
 import { Bookings } from '@/pages/Bookings'
+import { EnhancedBookings } from '@/pages/EnhancedBookings'
 import { Drivers } from '@/pages/Drivers'
 import { Vehicles } from '@/pages/Vehicles'
 import { LiveTracking } from '@/pages/LiveTracking'
@@ -53,7 +54,7 @@ export const AuthenticatedApp: React.FC = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="bookings" element={<Bookings />} />
+          <Route path="bookings" element={<EnhancedBookings />} />
           <Route path="drivers" element={<Drivers />} />
           <Route path="vehicles" element={<Vehicles />} />
           <Route path="vehicles/:id" element={<VehicleDetailView />} />

@@ -113,6 +113,114 @@ export interface VehicleMaintenanceLog {
   updated_at: string
 }
 
+export interface ServiceType {
+  id: string
+  name: 'city_ride' | 'car_rental' | 'airport' | 'outstation' | 'sharing'
+  display_name: string
+  description?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PricingRule {
+  id: string
+  service_type_id: string
+  vehicle_type: string
+  base_fare: number
+  per_km_rate: number
+  per_minute_rate?: number
+  minimum_fare: number
+  surge_multiplier: number
+  cancellation_fee: number
+  no_show_fee: number
+  waiting_charges_per_minute: number
+  free_waiting_time_minutes: number
+  is_active: boolean
+  effective_from?: string
+  effective_until?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface RentalPackage {
+  id: string
+  name: string
+  vehicle_type: string
+  duration_hours: number
+  included_kilometers: number
+  base_price: number
+  extra_km_rate: number
+  extra_hour_rate: number
+  cancellation_fee: number
+  no_show_fee: number
+  waiting_limit_minutes: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ZonePricing {
+  id: string
+  service_type_id: string
+  zone_name: string
+  from_location: string
+  to_location: string
+  vehicle_type: string
+  fixed_price?: number
+  base_price?: number
+  per_km_rate?: number
+  estimated_distance_km?: number
+  estimated_duration_minutes?: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface BookingStop {
+  id: string
+  booking_id: string
+  stop_order: number
+  address: string
+  latitude?: number
+  longitude?: number
+  estimated_duration_minutes: number
+  actual_arrival_time?: string
+  actual_departure_time?: string
+  stop_type: 'pickup' | 'intermediate' | 'dropoff'
+  is_completed: boolean
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SharedBooking {
+  id: string
+  sharing_group_id: string
+  primary_booking_id: string
+  passenger_booking_id: string
+  shared_fare_amount: number
+  fare_split_percentage: number
+  pickup_sequence: number
+  dropoff_sequence: number
+  status: 'pending' | 'confirmed' | 'cancelled'
+  created_at: string
+  updated_at: string
+}
+
+export interface BookingSchedule {
+  id: string
+  booking_id: string
+  scheduled_for: string
+  time_slot_start: string
+  time_slot_end: string
+  reminder_sent: boolean
+  driver_assigned_at?: string
+  status: 'scheduled' | 'confirmed' | 'cancelled' | 'completed'
+  created_at: string
+  updated_at: string
+}
+
 export interface Booking {
   id: string
   user_id?: string
@@ -130,9 +238,29 @@ export interface Booking {
   ride_type?: 'single' | 'shared' | 'rent'
   start_time?: string
   end_time?: string
+  service_type_id?: string
+  rental_package_id?: string
+  zone_pricing_id?: string
+  scheduled_time?: string
+  is_scheduled: boolean
+  is_shared: boolean
+  sharing_group_id?: string
+  total_stops: number
+  package_hours?: number
+  included_km?: number
+  extra_km_used: number
+  extra_hours_used: number
+  waiting_time_minutes: number
+  cancellation_reason?: string
+  no_show_reason?: string
+  upgrade_charges: number
   created_at: string
   updated_at: string
   driver?: Driver
+  service_type?: ServiceType
+  rental_package?: RentalPackage
+  zone_pricing?: ZonePricing
+  stops?: BookingStop[]
 }
 
 export interface Admin {

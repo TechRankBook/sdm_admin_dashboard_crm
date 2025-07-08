@@ -154,8 +154,115 @@ export type Database = {
           },
         ]
       }
+      booking_schedules: {
+        Row: {
+          booking_id: string
+          created_at: string
+          driver_assigned_at: string | null
+          id: string
+          reminder_sent: boolean | null
+          scheduled_for: string
+          status: string | null
+          time_slot_end: string
+          time_slot_start: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          driver_assigned_at?: string | null
+          id?: string
+          reminder_sent?: boolean | null
+          scheduled_for: string
+          status?: string | null
+          time_slot_end: string
+          time_slot_start: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          driver_assigned_at?: string | null
+          id?: string
+          reminder_sent?: boolean | null
+          scheduled_for?: string
+          status?: string | null
+          time_slot_end?: string
+          time_slot_start?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_schedules_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_stops: {
+        Row: {
+          actual_arrival_time: string | null
+          actual_departure_time: string | null
+          address: string
+          booking_id: string
+          created_at: string
+          estimated_duration_minutes: number | null
+          id: string
+          is_completed: boolean | null
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          stop_order: number
+          stop_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_arrival_time?: string | null
+          actual_departure_time?: string | null
+          address: string
+          booking_id: string
+          created_at?: string
+          estimated_duration_minutes?: number | null
+          id?: string
+          is_completed?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          stop_order: number
+          stop_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_arrival_time?: string | null
+          actual_departure_time?: string | null
+          address?: string
+          booking_id?: string
+          created_at?: string
+          estimated_duration_minutes?: number | null
+          id?: string
+          is_completed?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          stop_order?: number
+          stop_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_stops_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
+          cancellation_reason: string | null
           created_at: string | null
           distance_km: number | null
           driver_id: string | null
@@ -163,8 +270,15 @@ export type Database = {
           dropoff_latitude: number | null
           dropoff_longitude: number | null
           end_time: string | null
+          extra_hours_used: number | null
+          extra_km_used: number | null
           fare_amount: number | null
           id: string
+          included_km: number | null
+          is_scheduled: boolean | null
+          is_shared: boolean | null
+          no_show_reason: string | null
+          package_hours: number | null
           payment_method: string | null
           payment_status:
             | Database["public"]["Enums"]["payment_status_enum"]
@@ -172,16 +286,25 @@ export type Database = {
           pickup_address: string | null
           pickup_latitude: number | null
           pickup_longitude: number | null
+          rental_package_id: string | null
           ride_type:
             | Database["public"]["Enums"]["booking_ride_type_enum"]
             | null
+          scheduled_time: string | null
+          service_type_id: string | null
+          sharing_group_id: string | null
           start_time: string | null
           status: Database["public"]["Enums"]["booking_status_enum"] | null
+          total_stops: number | null
           updated_at: string | null
+          upgrade_charges: number | null
           user_id: string | null
           vehicle_id: string | null
+          waiting_time_minutes: number | null
+          zone_pricing_id: string | null
         }
         Insert: {
+          cancellation_reason?: string | null
           created_at?: string | null
           distance_km?: number | null
           driver_id?: string | null
@@ -189,8 +312,15 @@ export type Database = {
           dropoff_latitude?: number | null
           dropoff_longitude?: number | null
           end_time?: string | null
+          extra_hours_used?: number | null
+          extra_km_used?: number | null
           fare_amount?: number | null
           id?: string
+          included_km?: number | null
+          is_scheduled?: boolean | null
+          is_shared?: boolean | null
+          no_show_reason?: string | null
+          package_hours?: number | null
           payment_method?: string | null
           payment_status?:
             | Database["public"]["Enums"]["payment_status_enum"]
@@ -198,16 +328,25 @@ export type Database = {
           pickup_address?: string | null
           pickup_latitude?: number | null
           pickup_longitude?: number | null
+          rental_package_id?: string | null
           ride_type?:
             | Database["public"]["Enums"]["booking_ride_type_enum"]
             | null
+          scheduled_time?: string | null
+          service_type_id?: string | null
+          sharing_group_id?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status_enum"] | null
+          total_stops?: number | null
           updated_at?: string | null
+          upgrade_charges?: number | null
           user_id?: string | null
           vehicle_id?: string | null
+          waiting_time_minutes?: number | null
+          zone_pricing_id?: string | null
         }
         Update: {
+          cancellation_reason?: string | null
           created_at?: string | null
           distance_km?: number | null
           driver_id?: string | null
@@ -215,8 +354,15 @@ export type Database = {
           dropoff_latitude?: number | null
           dropoff_longitude?: number | null
           end_time?: string | null
+          extra_hours_used?: number | null
+          extra_km_used?: number | null
           fare_amount?: number | null
           id?: string
+          included_km?: number | null
+          is_scheduled?: boolean | null
+          is_shared?: boolean | null
+          no_show_reason?: string | null
+          package_hours?: number | null
           payment_method?: string | null
           payment_status?:
             | Database["public"]["Enums"]["payment_status_enum"]
@@ -224,14 +370,22 @@ export type Database = {
           pickup_address?: string | null
           pickup_latitude?: number | null
           pickup_longitude?: number | null
+          rental_package_id?: string | null
           ride_type?:
             | Database["public"]["Enums"]["booking_ride_type_enum"]
             | null
+          scheduled_time?: string | null
+          service_type_id?: string | null
+          sharing_group_id?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status_enum"] | null
+          total_stops?: number | null
           updated_at?: string | null
+          upgrade_charges?: number | null
           user_id?: string | null
           vehicle_id?: string | null
+          waiting_time_minutes?: number | null
+          zone_pricing_id?: string | null
         }
         Relationships: [
           {
@@ -239,6 +393,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_rental_package_id_fkey"
+            columns: ["rental_package_id"]
+            isOneToOne: false
+            referencedRelation: "rental_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
             referencedColumns: ["id"]
           },
           {
@@ -253,6 +421,13 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_zone_pricing_id_fkey"
+            columns: ["zone_pricing_id"]
+            isOneToOne: false
+            referencedRelation: "zone_pricing"
             referencedColumns: ["id"]
           },
         ]
@@ -612,6 +787,74 @@ export type Database = {
           },
         ]
       }
+      pricing_rules: {
+        Row: {
+          base_fare: number
+          cancellation_fee: number | null
+          created_at: string
+          effective_from: string | null
+          effective_until: string | null
+          free_waiting_time_minutes: number | null
+          id: string
+          is_active: boolean
+          minimum_fare: number
+          no_show_fee: number | null
+          per_km_rate: number
+          per_minute_rate: number | null
+          service_type_id: string
+          surge_multiplier: number | null
+          updated_at: string
+          vehicle_type: string
+          waiting_charges_per_minute: number | null
+        }
+        Insert: {
+          base_fare?: number
+          cancellation_fee?: number | null
+          created_at?: string
+          effective_from?: string | null
+          effective_until?: string | null
+          free_waiting_time_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          minimum_fare?: number
+          no_show_fee?: number | null
+          per_km_rate?: number
+          per_minute_rate?: number | null
+          service_type_id: string
+          surge_multiplier?: number | null
+          updated_at?: string
+          vehicle_type: string
+          waiting_charges_per_minute?: number | null
+        }
+        Update: {
+          base_fare?: number
+          cancellation_fee?: number | null
+          created_at?: string
+          effective_from?: string | null
+          effective_until?: string | null
+          free_waiting_time_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          minimum_fare?: number
+          no_show_fee?: number | null
+          per_km_rate?: number
+          per_minute_rate?: number | null
+          service_type_id?: string
+          surge_multiplier?: number | null
+          updated_at?: string
+          vehicle_type?: string
+          waiting_charges_per_minute?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rules_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       promo_codes: {
         Row: {
           code: string | null
@@ -639,6 +882,57 @@ export type Database = {
           expiry_date?: string | null
           id?: string
           usage_limit?: number | null
+        }
+        Relationships: []
+      }
+      rental_packages: {
+        Row: {
+          base_price: number
+          cancellation_fee: number | null
+          created_at: string
+          duration_hours: number
+          extra_hour_rate: number
+          extra_km_rate: number
+          id: string
+          included_kilometers: number
+          is_active: boolean
+          name: string
+          no_show_fee: number | null
+          updated_at: string
+          vehicle_type: string
+          waiting_limit_minutes: number | null
+        }
+        Insert: {
+          base_price: number
+          cancellation_fee?: number | null
+          created_at?: string
+          duration_hours: number
+          extra_hour_rate: number
+          extra_km_rate: number
+          id?: string
+          included_kilometers: number
+          is_active?: boolean
+          name: string
+          no_show_fee?: number | null
+          updated_at?: string
+          vehicle_type: string
+          waiting_limit_minutes?: number | null
+        }
+        Update: {
+          base_price?: number
+          cancellation_fee?: number | null
+          created_at?: string
+          duration_hours?: number
+          extra_hour_rate?: number
+          extra_km_rate?: number
+          id?: string
+          included_kilometers?: number
+          is_active?: boolean
+          name?: string
+          no_show_fee?: number | null
+          updated_at?: string
+          vehicle_type?: string
+          waiting_limit_minutes?: number | null
         }
         Relationships: []
       }
@@ -728,6 +1022,93 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shared_bookings: {
+        Row: {
+          created_at: string
+          dropoff_sequence: number
+          fare_split_percentage: number
+          id: string
+          passenger_booking_id: string
+          pickup_sequence: number
+          primary_booking_id: string
+          shared_fare_amount: number
+          sharing_group_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dropoff_sequence: number
+          fare_split_percentage: number
+          id?: string
+          passenger_booking_id: string
+          pickup_sequence: number
+          primary_booking_id: string
+          shared_fare_amount: number
+          sharing_group_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dropoff_sequence?: number
+          fare_split_percentage?: number
+          id?: string
+          passenger_booking_id?: string
+          pickup_sequence?: number
+          primary_booking_id?: string
+          shared_fare_amount?: number
+          sharing_group_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_bookings_passenger_booking_id_fkey"
+            columns: ["passenger_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_bookings_primary_booking_id_fkey"
+            columns: ["primary_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
         ]
@@ -1240,6 +1621,65 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zone_pricing: {
+        Row: {
+          base_price: number | null
+          created_at: string
+          estimated_distance_km: number | null
+          estimated_duration_minutes: number | null
+          fixed_price: number | null
+          from_location: string
+          id: string
+          is_active: boolean
+          per_km_rate: number | null
+          service_type_id: string
+          to_location: string
+          updated_at: string
+          vehicle_type: string
+          zone_name: string
+        }
+        Insert: {
+          base_price?: number | null
+          created_at?: string
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
+          fixed_price?: number | null
+          from_location: string
+          id?: string
+          is_active?: boolean
+          per_km_rate?: number | null
+          service_type_id: string
+          to_location: string
+          updated_at?: string
+          vehicle_type: string
+          zone_name: string
+        }
+        Update: {
+          base_price?: number | null
+          created_at?: string
+          estimated_distance_km?: number | null
+          estimated_duration_minutes?: number | null
+          fixed_price?: number | null
+          from_location?: string
+          id?: string
+          is_active?: boolean
+          per_km_rate?: number | null
+          service_type_id?: string
+          to_location?: string
+          updated_at?: string
+          vehicle_type?: string
+          zone_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zone_pricing_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
             referencedColumns: ["id"]
           },
         ]
