@@ -6,10 +6,12 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { DollarSign, Calculator, Settings, TrendingUp, Car, Plane, MapPin, Users, Clock, Plus, Edit } from 'lucide-react'
+import { DollarSign, Calculator, Settings, TrendingUp, Car, Plane, MapPin, Users, Clock, Plus, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { ServiceType, PricingRule, RentalPackage, ZonePricing } from '@/types/database'
+import { AddPricingRuleModal } from '@/components/pricing/AddPricingRuleModal'
+import { EditPricingRuleModal } from '@/components/pricing/EditPricingRuleModal'
 
 export const Pricing: React.FC = () => {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
@@ -18,6 +20,9 @@ export const Pricing: React.FC = () => {
   const [zonePricing, setZonePricing] = useState<ZonePricing[]>([])
   const [activeTab, setActiveTab] = useState('city_ride')
   const [loading, setLoading] = useState(true)
+  const [addRuleModalOpen, setAddRuleModalOpen] = useState(false)
+  const [editRuleModalOpen, setEditRuleModalOpen] = useState(false)
+  const [selectedRule, setSelectedRule] = useState<PricingRule | null>(null)
 
   const [fareEstimate, setFareEstimate] = useState({
     serviceType: '',
@@ -125,6 +130,19 @@ export const Pricing: React.FC = () => {
     return zonePricing.filter(z => z.service_type_id === activeService.id)
   }
 
+  const handleAddRule = () => {
+    setAddRuleModalOpen(true)
+  }
+
+  const handleEditRule = (rule: PricingRule) => {
+    setSelectedRule(rule)
+    setEditRuleModalOpen(true)
+  }
+
+  const handleModalSuccess = () => {
+    fetchData()
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -194,7 +212,7 @@ export const Pricing: React.FC = () => {
                         {getServiceIcon(service.name)}
                         <span className="ml-2">{service.display_name} Pricing</span>
                       </div>
-                      <Button size="sm">
+                      <Button size="sm" onClick={handleAddRule}>
                         <Plus className="h-4 w-4 mr-1" />
                         Add Rule
                       </Button>
@@ -257,23 +275,44 @@ export const Pricing: React.FC = () => {
                       // Standard Pricing Rules
                       <div className="space-y-4">
                         <h4 className="font-semibold">Pricing Rules</h4>
-                        {getActiveServicePricingRules().map((rule) => (
-                          <div key={rule.id} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h5 className="font-medium capitalize">{rule.vehicle_type}</h5>
-                                <div className="text-sm text-gray-600 space-y-1">
-                                  <p>Base: ₹{rule.base_fare} • Per km: ₹{rule.per_km_rate}</p>
-                                  <p>Minimum: ₹{rule.minimum_fare} • Surge: {rule.surge_multiplier}x</p>
-                                  {rule.cancellation_fee > 0 && <p>Cancellation: ₹{rule.cancellation_fee}</p>}
+                        {getActiveServicePricingRules().length === 0 ? (
+                          <p className="text-gray-500 text-center py-8">No pricing rules configured yet</p>
+                        ) : (
+                          getActiveServicePricingRules().map((rule) => (
+                            <div key={rule.id} className="border rounded-lg p-4">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h5 className="font-medium capitalize">{rule.vehicle_type}</h5>
+                                  <div className="text-sm text-gray-600 space-y-1 mt-2">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <p><span className="font-medium">Base:</span> ₹{rule.base_fare}</p>
+                                        <p><span className="font-medium">Per km:</span> ₹{rule.per_km_rate}</p>
+                                        {rule.per_minute_rate && <p><span className="font-medium">Per min:</span> ₹{rule.per_minute_rate}</p>}
+                                      </div>
+                                      <div>
+                                        <p><span className="font-medium">Minimum:</span> ₹{rule.minimum_fare}</p>
+                                        <p><span className="font-medium">Surge:</span> {rule.surge_multiplier}x</p>
+                                        {rule.waiting_charges_per_minute > 0 && (
+                                          <p><span className="font-medium">Waiting:</span> ₹{rule.waiting_charges_per_minute}/min</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {(rule.cancellation_fee > 0 || rule.no_show_fee > 0) && (
+                                      <div className="mt-2 pt-2 border-t">
+                                        {rule.cancellation_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded mr-2">Cancellation: ₹{rule.cancellation_fee}</span>}
+                                        {rule.no_show_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded">No Show: ₹{rule.no_show_fee}</span>}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
+                                <Button variant="outline" size="sm" onClick={() => handleEditRule(rule)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
                               </div>
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
                             </div>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     )}
                   </CardContent>
@@ -421,6 +460,21 @@ export const Pricing: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <AddPricingRuleModal
+        open={addRuleModalOpen}
+        onOpenChange={setAddRuleModalOpen}
+        serviceType={serviceTypes.find(s => s.name === activeTab) || serviceTypes[0]}
+        onSuccess={handleModalSuccess}
+      />
+
+      <EditPricingRuleModal
+        open={editRuleModalOpen}
+        onOpenChange={setEditRuleModalOpen}
+        rule={selectedRule}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   )
 }
