@@ -5,6 +5,7 @@ export interface Customer {
   email?: string
   profile_picture_url?: string
   loyalty_points?: number
+  preferred_payment_method?: string
   created_at: string
   updated_at: string
 }
@@ -233,8 +234,10 @@ export interface Booking {
   dropoff_latitude?: number
   dropoff_longitude?: number
   fare_amount: number
+  distance_km?: number
   status: 'pending' | 'accepted' | 'started' | 'completed' | 'cancelled' | 'no_driver' | 'in_progress'
   payment_status?: 'pending' | 'paid' | 'failed' | 'completed'
+  payment_method?: string
   ride_type?: 'single' | 'shared' | 'rent'
   start_time?: string
   end_time?: string
@@ -257,10 +260,13 @@ export interface Booking {
   created_at: string
   updated_at: string
   driver?: Driver
+  vehicle?: Vehicle
   service_type?: ServiceType
   rental_package?: RentalPackage
   zone_pricing?: ZonePricing
   stops?: BookingStop[]
+  payments?: any[]
+  cancellations?: any[]
 }
 
 export interface Admin {

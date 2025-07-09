@@ -1,23 +1,33 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Filter } from 'lucide-react'
+import { Plus, AlertCircle, TrendingUp, Clock, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ServiceType, Booking } from '@/types/database'
 import { ServiceSelector } from '@/components/booking/ServiceSelector'
 import { CityRideBooking } from '@/components/booking/CityRideBooking'
 import { CarRentalBooking } from '@/components/booking/CarRentalBooking'
+import { BookingFiltersAndSearch, BookingFilters } from '@/components/booking/BookingFiltersAndSearch'
+import { BookingTable } from '@/components/booking/BookingTable'
 import { toast } from 'sonner'
-import { formatDistanceToNow } from 'date-fns'
+import { useNavigate } from 'react-router-dom'
 
 export const EnhancedBookings: React.FC = () => {
+  const navigate = useNavigate()
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [selectedService, setSelectedService] = useState<string>('')
-  const [activeTab, setActiveTab] = useState('new')
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState<BookingFilters>({
+    search: '',
+    status: '',
+    serviceType: '',
+    timeRange: '',
+    assignmentStatus: ''
+  })
 
   useEffect(() => {
     fetchData()
@@ -26,12 +36,13 @@ export const EnhancedBookings: React.FC = () => {
   const fetchData = async () => {
     try {
       const [serviceTypesRes, bookingsRes] = await Promise.all([
-        supabase.from('service_types').select('*').eq('is_active', true),
+        supabase.from('service_types').select('*').eq('is_active', true).order('display_name'),
         supabase.from('bookings').select(`
           *,
           service_type:service_types(*),
           rental_package:rental_packages(*),
-          driver:drivers(full_name)
+          driver:drivers(*),
+          vehicle:vehicles(*)
         `).order('created_at', { ascending: false })
       ])
 
@@ -92,12 +103,120 @@ export const EnhancedBookings: React.FC = () => {
       }
 
       toast.success('Booking created successfully!')
-      setActiveTab('history')
+      setActiveTab('dashboard')
       fetchData()
     } catch (error) {
       console.error('Error creating booking:', error)
       toast.error('Failed to create booking')
     }
+  }
+
+  // Filter bookings based on current filters
+  const filteredBookings = useMemo(() => {
+    let filtered = [...bookings]
+
+    // Search filter
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase()
+      filtered = filtered.filter(booking => 
+        booking.id.toLowerCase().includes(searchTerm) ||
+        booking.pickup_address?.toLowerCase().includes(searchTerm) ||
+        booking.dropoff_address?.toLowerCase().includes(searchTerm) ||
+        booking.driver?.full_name?.toLowerCase().includes(searchTerm) ||
+        booking.vehicle?.license_plate?.toLowerCase().includes(searchTerm)
+      )
+    }
+
+    // Status filter
+    if (filters.status) {
+      filtered = filtered.filter(booking => booking.status === filters.status)
+    }
+
+    // Service type filter
+    if (filters.serviceType) {
+      filtered = filtered.filter(booking => booking.service_type?.name === filters.serviceType)
+    }
+
+    // Time range filter
+    if (filters.timeRange) {
+      const now = new Date()
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      
+      switch (filters.timeRange) {
+        case 'today':
+          filtered = filtered.filter(booking => {
+            const bookingDate = new Date(booking.created_at)
+            return bookingDate >= today
+          })
+          break
+        case 'upcoming':
+          filtered = filtered.filter(booking => 
+            booking.is_scheduled && 
+            booking.scheduled_time && 
+            new Date(booking.scheduled_time) > now
+          )
+          break
+        case 'past_7_days':
+          const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          filtered = filtered.filter(booking => 
+            new Date(booking.created_at) >= sevenDaysAgo
+          )
+          break
+        case 'past_30_days':
+          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+          filtered = filtered.filter(booking => 
+            new Date(booking.created_at) >= thirtyDaysAgo
+          )
+          break
+      }
+    }
+
+    // Assignment status filter
+    if (filters.assignmentStatus) {
+      switch (filters.assignmentStatus) {
+        case 'assigned':
+          filtered = filtered.filter(booking => booking.driver_id && booking.vehicle_id)
+          break
+        case 'partial':
+          filtered = filtered.filter(booking => 
+            (booking.driver_id && !booking.vehicle_id) || 
+            (!booking.driver_id && booking.vehicle_id)
+          )
+          break
+        case 'unassigned':
+          filtered = filtered.filter(booking => !booking.driver_id && !booking.vehicle_id)
+          break
+      }
+    }
+
+    return filtered
+  }, [bookings, filters])
+
+  // Calculate dashboard stats
+  const dashboardStats = useMemo(() => {
+    const totalBookings = bookings.length
+    const pendingBookings = bookings.filter(b => b.status === 'pending').length
+    const activeBookings = bookings.filter(b => ['accepted', 'started'].includes(b.status)).length
+    const unassignedBookings = bookings.filter(b => !b.driver_id || !b.vehicle_id).length
+    const totalRevenue = bookings
+      .filter(b => b.status === 'completed')
+      .reduce((sum, b) => sum + b.fare_amount, 0)
+
+    return {
+      totalBookings,
+      pendingBookings,
+      activeBookings,
+      unassignedBookings,
+      totalRevenue
+    }
+  }, [bookings])
+
+  const handleAssignDriver = (bookingId: string) => {
+    navigate(`/bookings/${bookingId}?tab=actions`)
+  }
+
+  const handleAssignVehicle = (bookingId: string) => {
+    navigate(`/bookings/${bookingId}?tab=actions`)
   }
 
   const getStatusColor = (status: string) => {
@@ -177,180 +296,133 @@ export const EnhancedBookings: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Booking Management</h1>
-        <p className="text-gray-600">Create new bookings and manage existing ones across all services</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Booking Management</h1>
+          <p className="text-gray-600">Comprehensive booking dashboard with advanced filtering and lifecycle management</p>
+        </div>
+        <Button onClick={() => setActiveTab('new')} className="flex items-center space-x-2">
+          <Plus className="w-4 h-4" />
+          <span>New Booking</span>
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="new">New Booking</TabsTrigger>
-            <TabsTrigger value="history">Booking History</TabsTrigger>
-            <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="new">New Booking</TabsTrigger>
+          <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6">
+          {/* Dashboard Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <Card>
+              <CardContent className="flex items-center p-6">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{dashboardStats.totalBookings}</p>
+                    <p className="text-sm text-gray-500">Total Bookings</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="flex items-center p-6">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Clock className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{dashboardStats.pendingBookings}</p>
+                    <p className="text-sm text-gray-500">Pending</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="flex items-center p-6">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{dashboardStats.activeBookings}</p>
+                    <p className="text-sm text-gray-500">Active</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="flex items-center p-6">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <AlertCircle className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{dashboardStats.unassignedBookings}</p>
+                    <p className="text-sm text-gray-500">Unassigned</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="flex items-center p-6">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-emerald-100 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">₹{dashboardStats.totalRevenue.toLocaleString()}</p>
+                    <p className="text-sm text-gray-500">Total Revenue</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters and Search */}
+          <BookingFiltersAndSearch
+            filters={filters}
+            onFiltersChange={setFilters}
+            serviceTypes={serviceTypes}
+            resultsCount={filteredBookings.length}
+          />
+
+          {/* Booking Table */}
+          <BookingTable
+            bookings={filteredBookings}
+            loading={loading}
+            onAssignDriver={handleAssignDriver}
+            onAssignVehicle={handleAssignVehicle}
+          />
+        </TabsContent>
 
         <TabsContent value="new" className="space-y-6">
           {renderBookingForm()}
         </TabsContent>
 
-        <TabsContent value="history" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>All Bookings</CardTitle>
-              <CardDescription>
-                {bookings.length} booking{bookings.length !== 1 ? 's' : ''} found
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {bookings.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No bookings found
-                  </div>
-                ) : (
-                  bookings.map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <span className="font-mono text-sm text-gray-500">
-                              #{booking.id.slice(0, 8)}
-                            </span>
-                            <Badge className={getStatusColor(booking.status)}>
-                              {booking.status.replace('_', ' ').toUpperCase()}
-                            </Badge>
-                            {booking.service_type && (
-                              <Badge variant="outline">
-                                {booking.service_type.display_name}
-                              </Badge>
-                            )}
-                            {booking.is_scheduled && (
-                              <Badge variant="secondary">Scheduled</Badge>
-                            )}
-                            <span className="text-sm text-gray-500">
-                              {formatDistanceToNow(new Date(booking.created_at), { addSuffix: true })}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <p className="text-sm text-gray-500">Pickup</p>
-                              <p className="font-medium">{booking.pickup_address || 'N/A'}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Dropoff</p>
-                              <p className="font-medium">{booking.dropoff_address || 'N/A'}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Fare</p>
-                              <p className="font-medium">₹{booking.fare_amount}</p>
-                            </div>
-                          </div>
-                          {booking.driver && (
-                            <div className="mt-2">
-                              <p className="text-sm text-gray-500">
-                                Driver: <span className="font-medium">{booking.driver.full_name}</span>
-                              </p>
-                            </div>
-                          )}
-                          {booking.rental_package && (
-                            <div className="mt-2">
-                              <p className="text-sm text-gray-500">
-                                Package: <span className="font-medium">{booking.rental_package.name}</span>
-                                {booking.total_stops > 0 && (
-                                  <span className="ml-2">• {booking.total_stops} stops</span>
-                                )}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
-                            View Details
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="scheduled" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Scheduled Bookings</CardTitle>
-              <CardDescription>
-                Bookings scheduled for future dates
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {bookings.filter(b => b.is_scheduled).length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No scheduled bookings found
-                  </div>
-                ) : (
-                  bookings
-                    .filter(b => b.is_scheduled)
-                    .map((booking) => (
-                      <div
-                        key={booking.id}
-                        className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <span className="font-mono text-sm text-gray-500">
-                                #{booking.id.slice(0, 8)}
-                              </span>
-                              <Badge variant="secondary">
-                                {booking.scheduled_time && 
-                                  new Date(booking.scheduled_time).toLocaleString()
-                                }
-                              </Badge>
-                              {booking.service_type && (
-                                <Badge variant="outline">
-                                  {booking.service_type.display_name}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
-                                <p className="text-sm text-gray-500">Pickup</p>
-                                <p className="font-medium">{booking.pickup_address || 'N/A'}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-500">Dropoff</p>
-                                <p className="font-medium">{booking.dropoff_address || 'N/A'}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-500">Fare</p>
-                                <p className="font-medium">₹{booking.fare_amount}</p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
-                              Modify
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <BookingFiltersAndSearch
+            filters={{...filters, timeRange: 'upcoming'}}
+            onFiltersChange={setFilters}
+            serviceTypes={serviceTypes}
+            resultsCount={bookings.filter(b => b.is_scheduled).length}
+          />
+
+          <BookingTable
+            bookings={bookings.filter(b => b.is_scheduled)}
+            loading={loading}
+            onAssignDriver={handleAssignDriver}
+            onAssignVehicle={handleAssignVehicle}
+          />
         </TabsContent>
       </Tabs>
     </div>
