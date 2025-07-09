@@ -39,7 +39,7 @@ export const BookingFiltersAndSearch: React.FC<BookingFiltersAndSearchProps> = (
   const handleFilterChange = (key: keyof BookingFilters, value: string) => {
     onFiltersChange({
       ...filters,
-      [key]: value
+      [key]: value === 'all' ? '' : value
     })
   }
 
@@ -83,12 +83,12 @@ export const BookingFiltersAndSearch: React.FC<BookingFiltersAndSearchProps> = (
         {/* Filters Row */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {/* Status Filter */}
-          <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+          <Select value={filters.status || undefined} onValueChange={(value) => handleFilterChange('status', value)}>
             <SelectTrigger>
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="accepted">Accepted</SelectItem>
               <SelectItem value="started">Started/Ongoing</SelectItem>
@@ -99,12 +99,12 @@ export const BookingFiltersAndSearch: React.FC<BookingFiltersAndSearchProps> = (
           </Select>
 
           {/* Service Type Filter */}
-          <Select value={filters.serviceType} onValueChange={(value) => handleFilterChange('serviceType', value)}>
+          <Select value={filters.serviceType || undefined} onValueChange={(value) => handleFilterChange('serviceType', value)}>
             <SelectTrigger>
               <SelectValue placeholder="All Services" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Services</SelectItem>
+              <SelectItem value="all">All Services</SelectItem>
               {serviceTypes.map((service) => (
                 <SelectItem key={service.id} value={service.name}>
                   {service.display_name}
@@ -114,12 +114,12 @@ export const BookingFiltersAndSearch: React.FC<BookingFiltersAndSearchProps> = (
           </Select>
 
           {/* Time Range Filter */}
-          <Select value={filters.timeRange} onValueChange={(value) => handleFilterChange('timeRange', value)}>
+          <Select value={filters.timeRange || undefined} onValueChange={(value) => handleFilterChange('timeRange', value)}>
             <SelectTrigger>
               <SelectValue placeholder="All Time" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Time</SelectItem>
+              <SelectItem value="all">All Time</SelectItem>
               <SelectItem value="today">Today</SelectItem>
               <SelectItem value="upcoming">Upcoming</SelectItem>
               <SelectItem value="past_7_days">Past 7 Days</SelectItem>
@@ -129,12 +129,12 @@ export const BookingFiltersAndSearch: React.FC<BookingFiltersAndSearchProps> = (
           </Select>
 
           {/* Assignment Status Filter */}
-          <Select value={filters.assignmentStatus} onValueChange={(value) => handleFilterChange('assignmentStatus', value)}>
+          <Select value={filters.assignmentStatus || undefined} onValueChange={(value) => handleFilterChange('assignmentStatus', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Assignment" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Assignments</SelectItem>
+              <SelectItem value="all">All Assignments</SelectItem>
               <SelectItem value="assigned">Fully Assigned</SelectItem>
               <SelectItem value="partial">Partially Assigned</SelectItem>
               <SelectItem value="unassigned">Unassigned</SelectItem>

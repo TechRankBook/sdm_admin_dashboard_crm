@@ -128,17 +128,17 @@ export const EnhancedBookings: React.FC = () => {
     }
 
     // Status filter
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(booking => booking.status === filters.status)
     }
 
     // Service type filter
-    if (filters.serviceType) {
+    if (filters.serviceType && filters.serviceType !== 'all') {
       filtered = filtered.filter(booking => booking.service_type?.name === filters.serviceType)
     }
 
     // Time range filter
-    if (filters.timeRange) {
+    if (filters.timeRange && filters.timeRange !== 'all') {
       const now = new Date()
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       
@@ -172,7 +172,7 @@ export const EnhancedBookings: React.FC = () => {
     }
 
     // Assignment status filter
-    if (filters.assignmentStatus) {
+    if (filters.assignmentStatus && filters.assignmentStatus !== 'all') {
       switch (filters.assignmentStatus) {
         case 'assigned':
           filtered = filtered.filter(booking => booking.driver_id && booking.vehicle_id)
