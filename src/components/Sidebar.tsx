@@ -14,6 +14,7 @@ import {
   FileText,
   Bell,
   Settings,
+  UserCog,
 } from 'lucide-react'
 
 const navigation = [
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Communication', href: '/communication', icon: MessageSquare },
   { name: 'Documents', href: '/documents', icon: FileText },
+  { name: 'User Management', href: '/users', icon: UserCog },
   { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]

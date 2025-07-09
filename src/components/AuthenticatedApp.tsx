@@ -15,6 +15,7 @@ import { Analytics } from '@/pages/Analytics'
 import { Communication } from '@/pages/Communication'
 import { Documents } from '@/pages/Documents'
 import { AdminProfile } from '@/pages/AdminProfile'
+import { UserManagement } from '@/pages/UserManagement'
 import { VehicleDetailView } from '@/components/vehicles/VehicleDetailView'
 import { DriverDetailView } from '@/components/drivers/DriverDetailView'
 import { BookingDetailView } from '@/components/booking/BookingDetailView'
@@ -67,6 +68,7 @@ export const AuthenticatedApp: React.FC = () => {
           <Route path="analytics" element={<Analytics />} />
           <Route path="communication" element={<Communication />} />
           <Route path="documents" element={<Documents />} />
+          <Route path="users" element={<UserManagement />} />
           <Route path="profile" element={<AdminProfile />} />
           <Route path="notifications" element={<div className="p-6">Notifications page coming soon...</div>} />
           <Route path="settings" element={<div className="p-6">Settings page coming soon...</div>} />
