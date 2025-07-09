@@ -186,33 +186,35 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
     switch (step) {
       case 'phone':
         return (
-          <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="phone_no"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter phone number (+1234567890)" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button 
-                type="button" 
-                onClick={() => sendOTP(form.getValues('phone_no'))}
-                disabled={isSubmitting || !form.getValues('phone_no')}
-              >
-                {isSubmitting ? 'Sending...' : 'Send OTP'}
-              </Button>
-            </DialogFooter>
-          </div>
+          <Form {...form}>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="phone_no"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter phone number (+1234567890)" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={() => sendOTP(form.getValues('phone_no'))}
+                  disabled={isSubmitting || !form.getValues('phone_no')}
+                >
+                  {isSubmitting ? 'Sending...' : 'Send OTP'}
+                </Button>
+              </DialogFooter>
+            </div>
+          </Form>
         )
 
       case 'otp':
