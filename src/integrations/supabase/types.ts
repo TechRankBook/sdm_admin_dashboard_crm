@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          setting_key: string
+          setting_type: string
+          setting_value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          setting_key: string
+          setting_type: string
+          setting_value: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          setting_key?: string
+          setting_type?: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       admins: {
         Row: {
           assigned_region: string | null
@@ -2286,6 +2328,17 @@ export type Database = {
           maintenance_insights: Json
         }[]
       }
+      get_settings_by_category: {
+        Args: { category_name: string }
+        Returns: {
+          setting_key: string
+          setting_value: Json
+          setting_type: string
+          display_name: string
+          description: string
+          is_active: boolean
+        }[]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_enum"]
@@ -2300,6 +2353,15 @@ export type Database = {
           admin_uuid: string
           action: string
           reason?: string
+        }
+        Returns: boolean
+      }
+      update_admin_setting: {
+        Args: {
+          p_category: string
+          p_setting_key: string
+          p_setting_value: Json
+          p_updated_by: string
         }
         Returns: boolean
       }
