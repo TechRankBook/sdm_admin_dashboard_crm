@@ -1,9 +1,33 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 import { SettingsCategory } from '@/components/settings/SettingsCategory'
+import { useAuth } from '@/context/AuthContext'
 
 export const Settings: React.FC = () => {
+  const { isAuthenticated, isAdmin } = useAuth()
+
+  if (!isAuthenticated || !isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">
+            Configure your application settings and preferences.
+          </p>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You need to be authenticated as an admin to access settings. Please refresh the page or log in again.
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
