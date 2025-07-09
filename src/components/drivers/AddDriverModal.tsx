@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useDrivers } from '@/hooks/useDrivers'
@@ -19,6 +20,9 @@ interface AddDriverModalProps {
 
 export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChange }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone')
+  const [otpCode, setOtpCode] = useState('')
+  const [verificationId, setVerificationId] = useState('')
   
   const { refetch } = useDrivers()
 
@@ -33,38 +37,85 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
     }
   })
 
+  const sendOTP = async (phoneNumber: string) => {
+    setIsSubmitting(true)
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: phoneNumber,
+        options: {
+          channel: 'sms'
+        }
+      })
+
+      if (error) {
+        console.error('OTP send error:', error)
+        toast.error(`Failed to send OTP: ${error.message}`)
+        return
+      }
+
+      setVerificationId(phoneNumber)
+      setStep('otp')
+      toast.success('OTP sent successfully!')
+    } catch (error) {
+      console.error('Unexpected error:', error)
+      toast.error('An unexpected error occurred while sending OTP')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const verifyOTP = async () => {
+    setIsSubmitting(true)
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: verificationId,
+        token: otpCode,
+        type: 'sms'
+      })
+
+      if (error) {
+        console.error('OTP verification error:', error)
+        toast.error(`Failed to verify OTP: ${error.message}`)
+        return
+      }
+
+      if (data.user) {
+        // Set user role to driver
+        const { error: roleError } = await supabase
+          .from('users')
+          .upsert({
+            id: data.user.id,
+            role: 'driver'
+          })
+
+        if (roleError) {
+          console.error('Role error:', roleError)
+          toast.error('Failed to set driver role')
+          return
+        }
+
+        // Pre-fill phone number and move to details step
+        form.setValue('phone_no', verificationId)
+        setStep('details')
+        toast.success('Phone verified successfully!')
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error)
+      toast.error('An unexpected error occurred during verification')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const handleSubmit = async (data: DriverFormData) => {
     setIsSubmitting(true)
 
     try {
-      // Create a temporary user account for the driver
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: data.email || `${data.phone_no}@tempdriver.com`,
-        password: Math.random().toString(36).slice(-8),
-        user_metadata: {
-          full_name: data.full_name,
-          phone_no: data.phone_no,
-          license_number: data.license_number
-        }
-      })
-
-      if (authError || !authData.user) {
-        console.error('Auth error:', authError)
-        toast.error('Failed to create driver account')
-        return
-      }
-
-      // Set user role to driver
-      const { error: roleError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          role: 'driver'
-        })
-
-      if (roleError) {
-        console.error('Role error:', roleError)
-        toast.error('Failed to set driver role')
+      // Get current user (should be the verified driver)
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error('No authenticated user found')
         return
       }
 
@@ -73,7 +124,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
       // Upload profile picture if provided
       if (data.profile_picture) {
         const fileExt = data.profile_picture.name.split('.').pop()
-        const fileName = `${authData.user.id}-${Date.now()}.${fileExt}`
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`
         
         const { error: uploadError } = await supabase.storage
           .from('drivers-profile-pictures')
@@ -95,7 +146,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
       const { error: insertError } = await supabase
         .from('drivers')
         .insert({
-          id: authData.user.id,
+          id: user.id,
           full_name: data.full_name,
           email: data.email,
           phone_no: data.phone_no,
@@ -126,6 +177,196 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
   const handleClose = () => {
     onOpenChange(false)
     form.reset()
+    setStep('phone')
+    setOtpCode('')
+    setVerificationId('')
+  }
+
+  const renderStepContent = () => {
+    switch (step) {
+      case 'phone':
+        return (
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="phone_no"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter phone number (+1234567890)" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button 
+                type="button" 
+                onClick={() => sendOTP(form.getValues('phone_no'))}
+                disabled={isSubmitting || !form.getValues('phone_no')}
+              >
+                {isSubmitting ? 'Sending...' : 'Send OTP'}
+              </Button>
+            </DialogFooter>
+          </div>
+        )
+
+      case 'otp':
+        return (
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-4">
+                Enter the 6-digit code sent to {verificationId}
+              </p>
+              <InputOTP
+                value={otpCode}
+                onChange={setOtpCode}
+                maxLength={6}
+                className="justify-center"
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setStep('phone')}>
+                Back
+              </Button>
+              <Button 
+                type="button" 
+                onClick={verifyOTP}
+                disabled={isSubmitting || otpCode.length !== 6}
+              >
+                {isSubmitting ? 'Verifying...' : 'Verify OTP'}
+              </Button>
+            </DialogFooter>
+          </div>
+        )
+
+      case 'details':
+        return (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter full name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" placeholder="Enter email address" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone_no"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter phone number" disabled />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="license_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>License Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter license number" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="suspended">Suspended</SelectItem>
+                        <SelectItem value="offline">Offline</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="profile_picture"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Profile Picture (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => onChange(e.target.files?.[0])}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Creating...' : 'Create Driver'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        )
+    }
   }
 
   return (
@@ -134,120 +375,13 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
         <DialogHeader>
           <DialogTitle>Add New Driver</DialogTitle>
           <DialogDescription>
-            Create a new driver profile.
+            {step === 'phone' && 'Enter phone number to start verification'}
+            {step === 'otp' && 'Verify your phone number'}
+            {step === 'details' && 'Complete driver profile'}
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="full_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter full name" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="email" placeholder="Enter email address" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phone_no"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter phone number" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="license_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>License Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter license number" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
-                      <SelectItem value="offline">Offline</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="profile_picture"
-              render={({ field: { onChange, value, ...field } }) => (
-                <FormItem>
-                  <FormLabel>Profile Picture (Optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => onChange(e.target.files?.[0])}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Creating...' : 'Create Driver'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        {renderStepContent()}
       </DialogContent>
     </Dialog>
   )
