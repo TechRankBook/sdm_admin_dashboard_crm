@@ -2218,6 +2218,40 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_booking_analytics: {
+        Args: { start_date?: string; end_date?: string }
+        Returns: {
+          total_bookings: number
+          completed_bookings: number
+          cancelled_bookings: number
+          pending_bookings: number
+          completion_rate: number
+          booking_trends: Json
+          ride_type_distribution: Json
+          hourly_distribution: Json
+        }[]
+      }
+      get_customer_analytics: {
+        Args: { start_date?: string; end_date?: string }
+        Returns: {
+          total_customers: number
+          new_customers: number
+          repeat_customers: number
+          customer_retention_rate: number
+          top_customers: Json
+          customer_acquisition_trend: Json
+        }[]
+      }
+      get_driver_performance_analytics: {
+        Args: { start_date?: string; end_date?: string }
+        Returns: {
+          total_active_drivers: number
+          average_rating: number
+          top_drivers: Json
+          driver_status_distribution: Json
+          driver_earnings: Json
+        }[]
+      }
       get_driver_rides: {
         Args: { driver_uuid: string }
         Returns: {
@@ -2229,6 +2263,27 @@ export type Database = {
           created_at: string
           start_time: string
           end_time: string
+        }[]
+      }
+      get_revenue_analytics: {
+        Args: { start_date?: string; end_date?: string }
+        Returns: {
+          total_revenue: number
+          completed_bookings: number
+          average_fare: number
+          revenue_growth_percentage: number
+          daily_revenue: Json
+        }[]
+      }
+      get_service_performance_analytics: {
+        Args: { start_date?: string; end_date?: string }
+        Returns: {
+          average_trip_duration: number
+          average_distance: number
+          service_efficiency_score: number
+          popular_routes: Json
+          vehicle_utilization: Json
+          maintenance_insights: Json
         }[]
       }
       get_user_role: {
