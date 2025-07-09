@@ -2,6 +2,8 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   LayoutDashboard,
   Calendar,
@@ -15,6 +17,8 @@ import {
   Bell,
   Settings,
   UserCog,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 const navigation = [
@@ -37,46 +41,97 @@ interface SidebarProps {
   onToggle: () => void
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ open }) => {
-  return (
-    <div
-      className={cn(
-        'bg-white border-r border-gray-200 flex flex-col transition-all duration-300',
-        open ? 'w-64' : 'w-16'
-      )}
-    >
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">FM</span>
-          </div>
-          {open && (
-            <div className="ml-3">
-              <h1 className="text-lg font-semibold text-gray-900">Fleet Manager</h1>
-            </div>
-          )}
-        </div>
-      </div>
+export const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
+  const NavigationItem = ({ item }: { item: typeof navigation[0] }) => {
+    const content = (
+      <NavLink
+        to={item.href}
+        className={({ isActive }) =>
+          cn(
+            'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors group relative',
+            open ? 'justify-start' : 'justify-center',
+            isActive
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+          )
+        }
+      >
+        <item.icon className={cn("h-5 w-5 flex-shrink-0", open ? "mr-3" : "")} />
+        {open && <span className="truncate">{item.name}</span>}
+      </NavLink>
+    )
 
-      <nav className="flex-1 p-4 space-y-1">
-        {navigation.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.href}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                isActive
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              )
-            }
-          >
-            <item.icon className="h-5 w-5 flex-shrink-0" />
-            {open && <span className="ml-3">{item.name}</span>}
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+    if (!open) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {content}
+          </TooltipTrigger>
+          <TooltipContent side="right" className="ml-2">
+            {item.name}
+          </TooltipContent>
+        </Tooltip>
+      )
+    }
+
+    return content
+  }
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      <div
+        className={cn(
+          'bg-background border-r border-border flex flex-col transition-all duration-300 ease-in-out relative',
+          open ? 'w-64' : 'w-16'
+        )}
+      >
+        {/* Header with Logo and Toggle */}
+        <div className={cn("p-4 border-b border-border", open ? "px-6" : "px-4")}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center min-w-0">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-primary-foreground font-bold text-sm">FM</span>
+              </div>
+              {open && (
+                <div className="ml-3 min-w-0">
+                  <h1 className="text-lg font-semibold text-foreground truncate">Fleet Manager</h1>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggle}
+              className={cn(
+                "h-8 w-8 flex-shrink-0 transition-transform duration-300",
+                !open && "ml-0"
+              )}
+            >
+              {open ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {navigation.map((item) => (
+            <NavigationItem key={item.name} item={item} />
+          ))}
+        </nav>
+
+        {/* Footer with User Info (when expanded) */}
+        {open && (
+          <div className="p-4 border-t border-border">
+            <div className="text-xs text-muted-foreground">
+              Admin Dashboard
+            </div>
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   )
 }
