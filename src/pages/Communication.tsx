@@ -1,260 +1,253 @@
 
 import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Search, Phone, MessageCircle, Send, AlertTriangle, Users } from 'lucide-react'
-import { toast } from 'sonner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { 
+  MessageCircle, 
+  Users, 
+  Clock, 
+  AlertCircle,
+  BarChart3,
+  UserCheck,
+  Truck
+} from 'lucide-react'
+import { useCommunication } from '@/hooks/useCommunication'
+import { ThreadsList } from '@/components/communication/ThreadsList'
+import { ChatInterface } from '@/components/communication/ChatInterface'
+import { UserActivityTimeline } from '@/components/communication/UserActivityTimeline'
+import { CreateThreadModal } from '@/components/communication/CreateThreadModal'
+import { useAuth } from '@/context/AuthContext'
 
 export const Communication: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showMessageModal, setShowMessageModal] = useState(false)
-  const [selectedContact, setSelectedContact] = useState<any>(null)
-  const [messageTemplate, setMessageTemplate] = useState('')
-  const [customMessage, setCustomMessage] = useState('')
+  const { user } = useAuth()
+  const {
+    threads,
+    selectedThread,
+    setSelectedThread,
+    messages,
+    activities,
+    loading,
+    fetchMessages,
+    fetchUserActivities,
+    sendMessage,
+    createThread,
+    updateThreadStatus
+  } = useCommunication()
 
-  const contacts = [
-    {
-      id: 1,
-      name: 'Rajesh Kumar',
-      phone: '+91-9876543210',
-      type: 'driver',
-      status: 'active',
-      issues: ['Late arrival complaint']
-    },
-    {
-      id: 2,
-      name: 'Priya Sharma',
-      phone: '+91-9876543211',
-      type: 'customer',
-      status: 'active',
-      issues: []
-    },
-    {
-      id: 3,
-      name: 'Amit Singh',
-      phone: '+91-9876543212',
-      type: 'driver',
-      status: 'suspended',
-      issues: ['Multiple cancellations', 'Customer complaint']
-    },
-    {
-      id: 4,
-      name: 'Sunita Patel',
-      phone: '+91-9876543213',
-      type: 'customer',
-      status: 'active',
-      issues: ['Payment dispute']
-    }
-  ]
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
-  const messageTemplates = {
-    'booking_confirmation': 'Your booking has been confirmed. Driver will arrive shortly.',
-    'driver_arriving': 'Your driver is arriving in 2-3 minutes. Please be ready.',
-    'complaint_followup': 'We have received your complaint and are investigating the matter.',
-    'payment_reminder': 'Please complete your pending payment for the recent ride.',
-    'driver_warning': 'This is a warning regarding your recent performance issues.'
-  }
-
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.phone.includes(searchTerm)
-  )
-
-  const handleCall = (phone: string) => {
-    window.open(`tel:${phone}`, '_self')
-    toast.success('Opening phone dialer...')
-  }
-
-  const handleWhatsApp = (phone: string, message?: string) => {
-    const text = message || 'Hello from Fleet Management Team'
-    const url = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`
-    window.open(url, '_blank')
-    toast.success('Opening WhatsApp...')
-  }
-
-  const handleSendMessage = () => {
-    const message = messageTemplate ? messageTemplates[messageTemplate as keyof typeof messageTemplates] : customMessage
-    if (selectedContact && message) {
-      handleWhatsApp(selectedContact.phone, message)
-      setShowMessageModal(false)
-      setMessageTemplate('')
-      setCustomMessage('')
-      setSelectedContact(null)
+  const handleSelectThread = (thread: any) => {
+    setSelectedThread(thread)
+    fetchMessages(thread.id)
+    
+    // Set selected user for activity timeline
+    const userId = thread.customer_id || thread.driver_id
+    if (userId && userId !== selectedUserId) {
+      setSelectedUserId(userId)
+      fetchUserActivities(userId)
     }
   }
+
+  const handleSendMessage = (content: string, isInternal?: boolean) => {
+    if (selectedThread) {
+      sendMessage(selectedThread.id, content, isInternal)
+    }
+  }
+
+  const handleUpdateStatus = (status: 'open' | 'in_progress' | 'resolved' | 'closed') => {
+    if (selectedThread) {
+      updateThreadStatus(selectedThread.id, status)
+    }
+  }
+
+  const handleCreateThread = () => {
+    setShowCreateModal(true)
+  }
+
+  const handleThreadCreated = (threadId: string) => {
+    // Find and select the newly created thread
+    const newThread = threads.find(t => t.id === threadId)
+    if (newThread) {
+      handleSelectThread(newThread)
+    }
+  }
+
+  // Statistics
+  const openThreads = threads.filter(t => t.status === 'open').length
+  const inProgressThreads = threads.filter(t => t.status === 'in_progress').length
+  const urgentThreads = threads.filter(t => t.priority === 'urgent').length
+  const totalUnread = threads.reduce((sum, thread) => sum + (thread.unread_count || 0), 0)
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Customer & Driver Communication</h1>
-        <p className="text-gray-600">Manage communication with customers and drivers</p>
+        <h1 className="text-2xl font-bold text-gray-900">Customer & Driver Communication CRM</h1>
+        <p className="text-gray-600">Centralized communication management and support system</p>
       </div>
 
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Search Contacts</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search by name or phone number..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline">
-              <Users className="h-4 w-4 mr-2" />
-              All Contacts ({filteredContacts.length})
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Contacts List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact List</CardTitle>
-          <CardDescription>
-            Click on actions to communicate with customers and drivers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredContacts.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No contacts found matching your search
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <MessageCircle className="h-5 w-5 text-blue-600" />
               </div>
-            ) : (
-              filteredContacts.map((contact) => (
-                <div
-                  key={contact.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-semibold text-gray-900">{contact.name}</h3>
-                        <Badge variant={contact.type === 'driver' ? 'default' : 'secondary'}>
-                          {contact.type.toUpperCase()}
-                        </Badge>
-                        {contact.issues.length > 0 && (
-                          <Badge variant="destructive" className="bg-red-100 text-red-800">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Issues
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-gray-600 mb-2">{contact.phone}</p>
-                      {contact.issues.length > 0 && (
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-red-700 mb-1">Flagged Issues:</p>
-                          <ul className="text-sm text-red-600">
-                            {contact.issues.map((issue, index) => (
-                              <li key={index} className="ml-4 list-disc">{issue}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCall(contact.phone)}
-                      >
-                        <Phone className="h-4 w-4 mr-1" />
-                        Call
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleWhatsApp(contact.phone)}
-                      >
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        WhatsApp
-                      </Button>
-                      <Dialog open={showMessageModal} onOpenChange={setShowMessageModal}>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            onClick={() => setSelectedContact(contact)}
-                          >
-                            <Send className="h-4 w-4 mr-1" />
-                            Message
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Send Message</DialogTitle>
-                            <DialogDescription>
-                              Send a message to {selectedContact?.name}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label>Message Template</Label>
-                              <Select value={messageTemplate} onValueChange={setMessageTemplate}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Choose a template" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="booking_confirmation">Booking Confirmation</SelectItem>
-                                  <SelectItem value="driver_arriving">Driver Arriving</SelectItem>
-                                  <SelectItem value="complaint_followup">Complaint Follow-up</SelectItem>
-                                  <SelectItem value="payment_reminder">Payment Reminder</SelectItem>
-                                  <SelectItem value="driver_warning">Driver Warning</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            <div>
-                              <Label>Custom Message</Label>
-                              <Textarea
-                                value={customMessage}
-                                onChange={(e) => setCustomMessage(e.target.value)}
-                                placeholder="Type your custom message here..."
-                                rows={3}
-                              />
-                            </div>
-                            
-                            {messageTemplate && (
-                              <div className="p-3 bg-blue-50 rounded-lg">
-                                <p className="text-sm text-blue-900">
-                                  <strong>Template Preview:</strong><br />
-                                  {messageTemplates[messageTemplate as keyof typeof messageTemplates]}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setShowMessageModal(false)}>
-                              Cancel
-                            </Button>
-                            <Button onClick={handleSendMessage}>
-                              <Send className="h-4 w-4 mr-2" />
-                              Send Message
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
+              <div>
+                <p className="text-sm text-gray-600">Open Conversations</p>
+                <p className="text-2xl font-bold">{openThreads}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Clock className="h-5 w-5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold">{inProgressThreads}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Urgent</p>
+                <p className="text-2xl font-bold">{urgentThreads}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Users className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Unread Messages</p>
+                <p className="text-2xl font-bold">{totalUnread}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[700px]">
+        {/* Threads List */}
+        <div className="lg:col-span-1">
+          <ThreadsList
+            threads={threads}
+            selectedThread={selectedThread}
+            onSelectThread={handleSelectThread}
+            onCreateThread={handleCreateThread}
+            loading={loading}
+          />
+        </div>
+
+        {/* Chat Interface */}
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="chat" className="h-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="chat" className="flex items-center space-x-2">
+                <MessageCircle className="h-4 w-4" />
+                <span>Conversation</span>
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="flex items-center space-x-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>Activity Timeline</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="chat" className="h-full mt-4">
+              <ChatInterface
+                thread={selectedThread}
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                onUpdateStatus={handleUpdateStatus}
+                currentUserId={user?.id || ''}
+              />
+            </TabsContent>
+
+            <TabsContent value="activity" className="h-full mt-4">
+              <UserActivityTimeline
+                activities={activities}
+                loading={loading}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* User Profile Summary */}
+      {selectedThread && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              {selectedThread.customer ? (
+                <UserCheck className="h-5 w-5 text-blue-500" />
+              ) : (
+                <Truck className="h-5 w-5 text-green-500" />
+              )}
+              <span>
+                {selectedThread.customer?.full_name || selectedThread.driver?.full_name} Profile
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Contact Information</p>
+                <p className="font-medium">
+                  {selectedThread.customer?.phone_no || selectedThread.driver?.phone_no}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {selectedThread.customer?.email || selectedThread.driver?.email || 'No email'}
+                </p>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-600">User Type</p>
+                <Badge variant={selectedThread.customer ? 'default' : 'secondary'}>
+                  {selectedThread.customer ? 'Customer' : 'Driver'}
+                </Badge>
+              </div>
+              
+              {selectedThread.booking && (
+                <div>
+                  <p className="text-sm text-gray-600">Related Booking</p>
+                  <p className="font-medium">#{selectedThread.booking.id?.slice(0, 8)}</p>
+                  <p className="text-sm text-gray-500">
+                    {selectedThread.booking.pickup_address} → {selectedThread.booking.dropoff_address}
+                  </p>
                 </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Create Thread Modal */}
+      <CreateThreadModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onThreadCreated={handleThreadCreated}
+      />
     </div>
   )
 }

@@ -432,6 +432,93 @@ export type Database = {
           },
         ]
       }
+      communication_threads: {
+        Row: {
+          assigned_admin_id: string | null
+          booking_id: string | null
+          created_at: string
+          created_by: string
+          customer_id: string | null
+          driver_id: string | null
+          id: string
+          last_message_at: string | null
+          priority: string
+          resolved_at: string | null
+          status: string
+          subject: string | null
+          thread_type: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_admin_id?: string | null
+          booking_id?: string | null
+          created_at?: string
+          created_by: string
+          customer_id?: string | null
+          driver_id?: string | null
+          id?: string
+          last_message_at?: string | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          subject?: string | null
+          thread_type: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_admin_id?: string | null
+          booking_id?: string | null
+          created_at?: string
+          created_by?: string
+          customer_id?: string | null
+          driver_id?: string | null
+          id?: string
+          last_message_at?: string | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          subject?: string | null
+          thread_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_threads_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_saved_locations: {
         Row: {
           address: string
@@ -682,6 +769,98 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          message_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          message_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_internal: boolean | null
+          message_type: string
+          read_by: Json | null
+          sender_id: string
+          sender_type: string
+          thread_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          message_type?: string
+          read_by?: Json | null
+          sender_id: string
+          sender_type: string
+          thread_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          message_type?: string
+          read_by?: Json | null
+          sender_id?: string
+          sender_type?: string
+          thread_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
             referencedColumns: ["id"]
           },
         ]
@@ -1109,6 +1288,118 @@ export type Database = {
             columns: ["primary_booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          resolution_notes: string | null
+          sla_due_date: string | null
+          tags: string[] | null
+          thread_id: string
+          ticket_number: string
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          resolution_notes?: string | null
+          sla_due_date?: string | null
+          tags?: string[] | null
+          thread_id: string
+          ticket_number: string
+          updated_at?: string
+          urgency?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          resolution_notes?: string | null
+          sla_due_date?: string | null
+          tags?: string[] | null
+          thread_id?: string
+          ticket_number?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_activities: {
+        Row: {
+          activity_type: string
+          booking_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          metadata: Json | null
+          thread_id: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          booking_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          metadata?: Json | null
+          thread_id?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          booking_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          metadata?: Json | null
+          thread_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activities_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activities_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1689,6 +1980,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_ticket_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_driver_rides: {
         Args: { driver_uuid: string }
         Returns: {
