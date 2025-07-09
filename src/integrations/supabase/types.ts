@@ -1420,11 +1420,11 @@ export type Database = {
       }
       vehicles: {
         Row: {
+          assigned_driver_id: string | null
           average_fuel_economy: number | null
           capacity: number | null
           color: string | null
           created_at: string | null
-          current_driver_id: string | null
           current_odometer: number | null
           id: string
           image_url: string | null
@@ -1444,11 +1444,11 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          assigned_driver_id?: string | null
           average_fuel_economy?: number | null
           capacity?: number | null
           color?: string | null
           created_at?: string | null
-          current_driver_id?: string | null
           current_odometer?: number | null
           id?: string
           image_url?: string | null
@@ -1468,11 +1468,11 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          assigned_driver_id?: string | null
           average_fuel_economy?: number | null
           capacity?: number | null
           color?: string | null
           created_at?: string | null
-          current_driver_id?: string | null
           current_odometer?: number | null
           id?: string
           image_url?: string | null
@@ -1493,8 +1493,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "vehicles_current_driver_id_fkey"
-            columns: ["current_driver_id"]
+            foreignKeyName: "vehicles_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
             referencedColumns: ["id"]

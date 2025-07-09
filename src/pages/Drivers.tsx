@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,7 @@ import { DeleteDriverModal } from '@/components/drivers/DeleteDriverModal'
 import { Driver } from '@/types/database'
 
 export const Drivers: React.FC = () => {
+  const navigate = useNavigate()
   const { drivers, loading } = useDrivers()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -54,9 +56,7 @@ export const Drivers: React.FC = () => {
   }
 
   const handleViewDriver = (driver: Driver) => {
-    console.log('View driver:', driver)
-    setSelectedDriver(driver)
-    setShowProfileModal(true)
+    navigate(`/drivers/${driver.id}`)
   }
 
   const handleEditDriver = (driver: Driver) => {

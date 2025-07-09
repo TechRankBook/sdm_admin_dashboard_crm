@@ -16,6 +16,7 @@ import { Communication } from '@/pages/Communication'
 import { Documents } from '@/pages/Documents'
 import { AdminProfile } from '@/pages/AdminProfile'
 import { VehicleDetailView } from '@/components/vehicles/VehicleDetailView'
+import { DriverDetailView } from '@/components/drivers/DriverDetailView'
 
 export const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated, isAdmin } = useAuth()
@@ -56,6 +57,7 @@ export const AuthenticatedApp: React.FC = () => {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="bookings" element={<EnhancedBookings />} />
           <Route path="drivers" element={<Drivers />} />
+          <Route path="drivers/:id" element={<DriverDetailView />} />
           <Route path="vehicles" element={<Vehicles />} />
           <Route path="vehicles/:id" element={<VehicleDetailView />} />
           <Route path="live-tracking" element={<LiveTracking />} />
