@@ -1,60 +1,70 @@
 
-import React, { useEffect, useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { supabase } from '@/lib/supabase'
-import { Driver } from '@/types/database'
-import { MapPin, Navigation, Users, Car, Clock } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Users, Car, MapPin, Activity, Phone, Settings, RotateCcw } from 'lucide-react'
+import { LiveMapView } from '@/components/tracking/LiveMapView'
+import { DriverTrackingCard } from '@/components/tracking/DriverTrackingCard'
+import { useRealtimeTracking } from '@/hooks/useRealtimeTracking'
+import { toast } from 'sonner'
 
 export const LiveTracking: React.FC = () => {
-  const [drivers, setDrivers] = useState<Driver[]>([])
-  const [loading, setLoading] = useState(true)
+  const {
+    trackingData,
+    loading,
+    error,
+    lastUpdate,
+    refreshData,
+    getActiveDriversCount,
+    getOnRideDriversCount
+  } = useRealtimeTracking()
 
-  useEffect(() => {
-    fetchActiveDrivers()
+  const [selectedDriver, setSelectedDriver] = useState<string>('all')
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [showOnlyActive, setShowOnlyActive] = useState(false)
+
+  const handleViewDetails = useCallback((driverId: string) => {
+    const driver = trackingData.find(data => data.driver.id === driverId)
+    if (driver) {
+      setSelectedDriver(driverId)
+      toast.info(`Tracking ${driver.driver.full_name}`)
+    }
+  }, [trackingData])
+
+  const handleCallDriver = useCallback((phone: string) => {
+    // Open phone dialer
+    window.open(`tel:${phone}`)
   }, [])
 
-  const fetchActiveDrivers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('drivers')
-        .select('*')
-        .in('status', ['active', 'on_ride'])
-        .order('full_name')
+  const handleRefresh = useCallback(() => {
+    refreshData()
+    toast.success('Tracking data refreshed')
+  }, [refreshData])
 
-      if (error) throw error
-      setDrivers(data || [])
-    } catch (error) {
-      console.error('Error fetching active drivers:', error)
-    } finally {
-      setLoading(false)
+  const filteredTrackingData = trackingData.filter(data => {
+    if (showOnlyActive) {
+      return data.booking && ['accepted', 'started'].includes(data.booking.status)
     }
-  }
+    return true
+  })
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 border-green-200'
-      case 'on_ride':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  const activeDrivers = drivers.filter(d => d.status === 'active')
-  const onRideDrivers = drivers.filter(d => d.status === 'on_ride')
+  const activeDriversCount = getActiveDriversCount()
+  const onRideDriversCount = getOnRideDriversCount()
+  const totalDriversCount = trackingData.length
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+      <div className="space-y-6 animate-fade-in">
+        <div className="h-8 bg-muted rounded w-1/4 animate-pulse"></div>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3 h-96 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="lg:col-span-3 h-96 bg-muted rounded-lg animate-pulse"></div>
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded animate-pulse"></div>
+              <div key={i} className="h-20 bg-muted rounded animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -62,45 +72,97 @@ export const LiveTracking: React.FC = () => {
     )
   }
 
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Live Tracking</h1>
+          <p className="text-muted-foreground">Real-time location of active drivers</p>
+        </div>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-destructive mb-4">Error loading tracking data</div>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={handleRefresh}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Live Tracking</h1>
-        <p className="text-gray-600">Real-time location of active drivers</p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Live Tracking</h1>
+          <p className="text-muted-foreground">Real-time location of active drivers and vehicles</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="auto-refresh"
+              checked={autoRefresh}
+              onCheckedChange={setAutoRefresh}
+            />
+            <Label htmlFor="auto-refresh" className="text-sm">Auto refresh</Label>
+          </div>
+          <Button variant="outline" onClick={handleRefresh}>
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Available Drivers</p>
-                <p className="text-2xl font-bold text-gray-900">{activeDrivers.length}</p>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="hover-scale">
+          <CardContent className="flex items-center p-6">
+            <div className="p-2 bg-green-100 rounded-lg mr-4">
+              <Users className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Available Drivers</p>
+              <p className="text-2xl font-bold">{activeDriversCount}</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Car className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">On Ride</p>
-                <p className="text-2xl font-bold text-gray-900">{onRideDrivers.length}</p>
-              </div>
+
+        <Card className="hover-scale">
+          <CardContent className="flex items-center p-6">
+            <div className="p-2 bg-blue-100 rounded-lg mr-4">
+              <Car className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">On Ride</p>
+              <p className="text-2xl font-bold">{onRideDriversCount}</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <MapPin className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Active</p>
-                <p className="text-2xl font-bold text-gray-900">{drivers.length}</p>
-              </div>
+
+        <Card className="hover-scale">
+          <CardContent className="flex items-center p-6">
+            <div className="p-2 bg-purple-100 rounded-lg mr-4">
+              <Activity className="h-6 w-6 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Active</p>
+              <p className="text-2xl font-bold">{totalDriversCount}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-scale">
+          <CardContent className="flex items-center p-6">
+            <div className="p-2 bg-orange-100 rounded-lg mr-4">
+              <MapPin className="h-6 w-6 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Live Updates</p>
+              <p className="text-2xl font-bold">{autoRefresh ? 'ON' : 'OFF'}</p>
             </div>
           </CardContent>
         </Card>
@@ -108,63 +170,74 @@ export const LiveTracking: React.FC = () => {
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Map Area */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Navigation className="h-5 w-5 mr-2" />
-              Live Map View
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-              <div className="text-center">
-                <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">Interactive Map</p>
-                <p className="text-sm text-gray-400">Google Maps integration will show driver locations here</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Live Map */}
+        <div className="lg:col-span-3">
+          <LiveMapView />
+        </div>
 
-        {/* Driver List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Drivers</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {drivers.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No active drivers</p>
+        {/* Driver List Sidebar */}
+        <div className="space-y-4">
+          {/* Controls */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Driver Controls</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="driver-filter" className="text-sm font-medium">Filter Driver</Label>
+                <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All drivers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Drivers</SelectItem>
+                    {trackingData.map(data => (
+                      <SelectItem key={data.driver.id} value={data.driver.id}>
+                        {data.driver.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-active"
+                  checked={showOnlyActive}
+                  onCheckedChange={setShowOnlyActive}
+                />
+                <Label htmlFor="show-active" className="text-sm">Only active rides</Label>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                Last updated: {lastUpdate.toLocaleTimeString()}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Driver Cards */}
+          <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            {filteredTrackingData.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No active drivers found</p>
+                </CardContent>
+              </Card>
             ) : (
-              drivers.map((driver) => (
-                <div key={driver.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">{driver.full_name}</h4>
-                    <Badge className={getStatusColor(driver.status)}>
-                      {driver.status.replace('_', ' ').toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      <span>Location updating...</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="h-3 w-3 mr-1" />
-                      <span>Last update: Just now</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full mt-3">
-                    View Details
-                  </Button>
-                </div>
+              filteredTrackingData.map((data) => (
+                <DriverTrackingCard
+                  key={data.driver.id}
+                  driver={data.driver}
+                  booking={data.booking}
+                  vehicle={data.vehicle}
+                  onViewDetails={handleViewDetails}
+                  onCallDriver={handleCallDriver}
+                />
               ))
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   )
