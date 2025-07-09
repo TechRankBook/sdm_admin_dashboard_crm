@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -8,21 +7,21 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { GooglePlacesInput } from '@/components/ui/google-places-input'
-import { CalendarIcon, Clock, MapPin } from 'lucide-react'
+import { CalendarIcon, Clock, Users } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 
-interface CityRideBookingProps {
+interface SharingBookingProps {
   onBook: (bookingData: any) => void
 }
 
-export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
+export const SharingBooking: React.FC<SharingBookingProps> = ({ onBook }) => {
   const [bookingData, setBookingData] = useState({
     pickup: '',
     dropoff: '',
     pickupCoordinates: null as { lat: number; lng: number } | null,
     dropoffCoordinates: null as { lat: number; lng: number } | null,
-    vehicleType: '',
+    passengerCount: 1,
     isScheduled: false,
     scheduledDate: undefined as Date | undefined,
     scheduledTime: ''
@@ -38,8 +37,8 @@ export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
   }
 
   const handleSubmit = () => {
-    if (!bookingData.pickup || !bookingData.dropoff || !bookingData.vehicleType) {
-      toast.error('Please fill in all required fields: pickup location, dropoff location, and vehicle type')
+    if (!bookingData.pickup || !bookingData.dropoff) {
+      toast.error('Please fill in pickup and dropoff locations')
       return
     }
 
@@ -53,15 +52,15 @@ export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
       : null
 
     onBook({
-      serviceType: 'city_ride',
+      serviceType: 'sharing',
       pickup: bookingData.pickup,
       dropoff: bookingData.dropoff,
       pickupCoordinates: bookingData.pickupCoordinates,
       dropoffCoordinates: bookingData.dropoffCoordinates,
-      vehicleType: bookingData.vehicleType,
+      passengerCount: bookingData.passengerCount,
       isScheduled: bookingData.isScheduled,
       scheduledTime: scheduledDateTime?.toISOString(),
-      estimatedFare: 150 // Basic fare calculation
+      estimatedFare: Math.round(120 / bookingData.passengerCount) // Shared fare
     })
   }
 
@@ -69,8 +68,8 @@ export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <MapPin className="h-5 w-5 mr-2" />
-          City Ride Booking
+          <Users className="h-5 w-5 mr-2" />
+          Shared Ride
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -107,15 +106,19 @@ export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
         </div>
 
         <div>
-          <Label>Vehicle Type</Label>
-          <Select value={bookingData.vehicleType} onValueChange={(value) => setBookingData(prev => ({ ...prev, vehicleType: value }))}>
+          <Label>Number of Passengers</Label>
+          <Select 
+            value={bookingData.passengerCount.toString()} 
+            onValueChange={(value) => setBookingData(prev => ({ ...prev, passengerCount: parseInt(value) }))}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Select vehicle type" />
+              <SelectValue placeholder="Select passenger count" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="sedan">Sedan</SelectItem>
-              <SelectItem value="suv">SUV</SelectItem>
-              <SelectItem value="luxury">Luxury</SelectItem>
+              <SelectItem value="1">1 Passenger</SelectItem>
+              <SelectItem value="2">2 Passengers</SelectItem>
+              <SelectItem value="3">3 Passengers</SelectItem>
+              <SelectItem value="4">4 Passengers</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -126,7 +129,7 @@ export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
             checked={bookingData.isScheduled}
             onCheckedChange={handleScheduleToggle}
           />
-          <Label htmlFor="schedule">Schedule for later (up to 48 hours)</Label>
+          <Label htmlFor="schedule">Schedule for later</Label>
         </div>
 
         {bookingData.isScheduled && (
@@ -145,7 +148,7 @@ export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
                     mode="single"
                     selected={bookingData.scheduledDate}
                     onSelect={(date) => setBookingData(prev => ({ ...prev, scheduledDate: date }))}
-                    disabled={(date) => date < new Date() || date > new Date(Date.now() + 48 * 60 * 60 * 1000)}
+                    disabled={(date) => date < new Date()}
                     initialFocus
                   />
                 </PopoverContent>
@@ -154,19 +157,30 @@ export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
 
             <div>
               <Label htmlFor="time">Select Time</Label>
-              <Input
+              <input
                 id="time"
                 type="time"
                 value={bookingData.scheduledTime}
                 onChange={(e) => setBookingData(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
           </div>
         )}
 
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <h4 className="font-semibold text-blue-900">Sharing Benefits</h4>
+          <ul className="text-sm text-blue-700 mt-2 space-y-1">
+            <li>• Split fare with other passengers</li>
+            <li>• Eco-friendly travel option</li>
+            <li>• Meet new people on your route</li>
+            <li>• Estimated fare: ₹{Math.round(120 / bookingData.passengerCount)} per person</li>
+          </ul>
+        </div>
+
         <Button onClick={handleSubmit} className="w-full" size="lg">
           <Clock className="h-4 w-4 mr-2" />
-          {bookingData.isScheduled ? 'Schedule Ride' : 'Book Now'}
+          {bookingData.isScheduled ? 'Schedule Shared Ride' : 'Find Shared Ride'}
         </Button>
       </CardContent>
     </Card>

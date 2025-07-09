@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { GooglePlacesInput } from '@/components/ui/google-places-input'
 import { Clock, Plus, X, MapPin } from 'lucide-react'
 import { RentalPackage } from '@/types/database'
 import { supabase } from '@/lib/supabase'
@@ -16,6 +17,7 @@ interface CarRentalBookingProps {
 interface Stop {
   id: string
   address: string
+  coordinates?: { lat: number; lng: number }
   duration: number
 }
 
@@ -26,6 +28,7 @@ export const CarRentalBooking: React.FC<CarRentalBookingProps> = ({ onBook }) =>
     { id: '1', address: '', duration: 15 }
   ])
   const [pickupLocation, setPickupLocation] = useState('')
+  const [pickupCoordinates, setPickupCoordinates] = useState<{ lat: number; lng: number } | null>(null)
 
   useEffect(() => {
     fetchRentalPackages()
@@ -62,7 +65,7 @@ export const CarRentalBooking: React.FC<CarRentalBookingProps> = ({ onBook }) =>
     }
   }
 
-  const updateStop = (id: string, field: keyof Stop, value: string | number) => {
+  const updateStop = (id: string, field: keyof Stop, value: string | number | { lat: number; lng: number }) => {
     setStops(prev => prev.map(stop => 
       stop.id === id ? { ...stop, [field]: value } : stop
     ))
@@ -78,6 +81,10 @@ export const CarRentalBooking: React.FC<CarRentalBookingProps> = ({ onBook }) =>
       serviceType: 'car_rental',
       rentalPackageId: selectedPackage.id,
       pickupLocation,
+      pickupCoordinates,
+      packageHours: selectedPackage.duration_hours,
+      includedKm: selectedPackage.included_kilometers,
+      estimatedFare: selectedPackage.base_price,
       stops: stops.map((stop, index) => ({
         ...stop,
         stopOrder: index + 1,
@@ -138,10 +145,13 @@ export const CarRentalBooking: React.FC<CarRentalBookingProps> = ({ onBook }) =>
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="pickup">Pickup Location</Label>
-            <Input
+            <GooglePlacesInput
               id="pickup"
               value={pickupLocation}
-              onChange={(e) => setPickupLocation(e.target.value)}
+              onChange={(address, coordinates) => {
+                setPickupLocation(address)
+                setPickupCoordinates(coordinates || null)
+              }}
               placeholder="Enter pickup address"
             />
           </div>
@@ -159,9 +169,12 @@ export const CarRentalBooking: React.FC<CarRentalBookingProps> = ({ onBook }) =>
               {stops.map((stop, index) => (
                 <div key={stop.id} className="flex items-center space-x-2">
                   <div className="flex-1">
-                    <Input
+                    <GooglePlacesInput
                       value={stop.address}
-                      onChange={(e) => updateStop(stop.id, 'address', e.target.value)}
+                      onChange={(address, coordinates) => {
+                        updateStop(stop.id, 'address', address)
+                        updateStop(stop.id, 'coordinates', coordinates || { lat: 0, lng: 0 })
+                      }}
                       placeholder={`${index === 0 ? 'First stop' : index === stops.length - 1 ? 'Final destination' : 'Stop'} address`}
                     />
                   </div>

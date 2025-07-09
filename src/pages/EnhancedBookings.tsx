@@ -9,6 +9,9 @@ import { ServiceType, Booking } from '@/types/database'
 import { ServiceSelector } from '@/components/booking/ServiceSelector'
 import { CityRideBooking } from '@/components/booking/CityRideBooking'
 import { CarRentalBooking } from '@/components/booking/CarRentalBooking'
+import { AirportBooking } from '@/components/booking/AirportBooking'
+import { OutstationBooking } from '@/components/booking/OutstationBooking'
+import { SharingBooking } from '@/components/booking/SharingBooking'
 import { BookingFiltersAndSearch, BookingFilters } from '@/components/booking/BookingFiltersAndSearch'
 import { BookingTable } from '@/components/booking/BookingTable'
 import { toast } from 'sonner'
@@ -65,28 +68,48 @@ export const EnhancedBookings: React.FC = () => {
 
   const handleBooking = async (bookingData: any) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error('You must be logged in to create a booking')
+        return
+      }
+
       const serviceType = serviceTypes.find(s => s.name === bookingData.serviceType)
       if (!serviceType) {
         toast.error('Invalid service type')
         return
       }
 
+      console.log('Creating booking with data:', bookingData)
+
       // Create booking in database
       const { data, error } = await supabase.from('bookings').insert([
         {
+          user_id: user.id, // Required for RLS policies
           service_type_id: serviceType.id,
           pickup_address: bookingData.pickup || bookingData.pickupLocation,
           dropoff_address: bookingData.dropoff,
-          fare_amount: 0, // Calculate based on pricing rules
+          pickup_latitude: bookingData.pickupCoordinates?.lat,
+          pickup_longitude: bookingData.pickupCoordinates?.lng,
+          dropoff_latitude: bookingData.dropoffCoordinates?.lat,
+          dropoff_longitude: bookingData.dropoffCoordinates?.lng,
+          fare_amount: bookingData.estimatedFare || 0,
           status: 'pending',
           is_scheduled: bookingData.isScheduled || false,
           scheduled_time: bookingData.scheduledTime,
           rental_package_id: bookingData.rentalPackageId,
-          total_stops: bookingData.stops?.length || 0
+          total_stops: bookingData.stops?.length || 0,
+          package_hours: bookingData.packageHours,
+          included_km: bookingData.includedKm
         }
       ]).select().single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Booking creation error:', error)
+        throw error
+      }
+
+      console.log('Booking created successfully:', data)
 
       // Create booking stops if it's a rental
       if (bookingData.stops && data) {
@@ -94,20 +117,25 @@ export const EnhancedBookings: React.FC = () => {
           booking_id: data.id,
           stop_order: stop.stopOrder,
           address: stop.address,
+          latitude: stop.coordinates?.lat,
+          longitude: stop.coordinates?.lng,
           estimated_duration_minutes: stop.duration,
           stop_type: stop.stopType
         }))
 
         const { error: stopsError } = await supabase.from('booking_stops').insert(stops)
-        if (stopsError) throw stopsError
+        if (stopsError) {
+          console.error('Stops creation error:', stopsError)
+          throw stopsError
+        }
       }
 
       toast.success('Booking created successfully!')
       setActiveTab('dashboard')
       fetchData()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating booking:', error)
-      toast.error('Failed to create booking')
+      toast.error(error.message || 'Failed to create booking')
     }
   }
 
@@ -254,6 +282,12 @@ export const EnhancedBookings: React.FC = () => {
         return <CityRideBooking onBook={handleBooking} />
       case 'car_rental':
         return <CarRentalBooking onBook={handleBooking} />
+      case 'airport':
+        return <AirportBooking onBook={handleBooking} />
+      case 'outstation':
+        return <OutstationBooking onBook={handleBooking} />
+      case 'sharing':
+        return <SharingBooking onBook={handleBooking} />
       default:
         return (
           <Card>
