@@ -39,10 +39,10 @@ export const useAuthState = () => {
       } catch (error: any) {
         authLog("Failed to fetch user role:", error.message)
         
-        // Even on error, clear loading and set role to null
+        // On role fetch failure, preserve previous role if it exists to prevent flickering
         setAuthState(prev => ({
           ...prev,
-          userRole: null,
+          userRole: prev.userRole || null, // Keep existing role if available
           loading: false,
         }))
       }

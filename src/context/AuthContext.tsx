@@ -26,45 +26,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
-        // Set up auth listener first
-        authLog("Setting up auth state listener")
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, newSession) => {
-            if (cleanup) return
-            authLog("Auth state change event:", event)
-            await handleSessionUpdate(newSession, 'listener')
-          }
-        )
-
-        // Get initial session with timeout
+        // Get initial session first to minimize flickering
         authLog("Getting initial session")
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Initial session timeout')), 6000)
-        })
-
-        const sessionPromise = supabase.auth.getSession()
-        
         try {
-          const { data: { session: initialSession }, error } = await Promise.race([
-            sessionPromise, 
-            timeoutPromise
-          ])
+          const { data: { session: initialSession }, error } = await supabase.auth.getSession()
 
           if (cleanup) return
 
           if (error) {
             authLog("Error getting initial session:", error.message)
+          } else {
+            authLog("Initial session retrieved:", !!initialSession)
+            await handleSessionUpdate(initialSession, 'initial')
           }
-
-          authLog("Initial session retrieved:", !!initialSession)
-          await handleSessionUpdate(initialSession, 'initial')
-
         } catch (error: any) {
           if (cleanup) return
-          authLog("Timeout or error during initial session check:", error.message)
-          // Continue anyway - don't block the app
+          authLog("Error during initial session check:", error.message)
           clearLoading()
         }
+
+        // Set up auth listener after initial session check
+        authLog("Setting up auth state listener")
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, newSession) => {
+            if (cleanup) return
+            authLog("Auth state change event:", event)
+            
+            // Only update if this is a real change, not a duplicate
+            await handleSessionUpdate(newSession, 'listener')
+          }
+        )
 
         // Cleanup function
         return () => {
@@ -86,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authLog("SAFETY TIMEOUT: Force clearing loading state")
         clearLoading()
       }
-    }, 8000) // 8 second absolute maximum
+    }, 5000) // Reduced to 5 seconds for faster recovery
 
     const cleanupPromise = initializeAuth()
 
