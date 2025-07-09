@@ -53,6 +53,13 @@ export type Database = {
             foreignKeyName: "admins_id_fkey"
             columns: ["id"]
             isOneToOne: true
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admins_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -86,6 +93,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_cancellations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
             referencedColumns: ["id"]
           },
           {
@@ -413,6 +427,13 @@ export type Database = {
             foreignKeyName: "bookings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -494,6 +515,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
             referencedColumns: ["id"]
           },
           {
@@ -604,6 +632,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "customers_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customers_id_fkey"
             columns: ["id"]
@@ -739,6 +774,13 @@ export type Database = {
             foreignKeyName: "drivers_id_fkey"
             columns: ["id"]
             isOneToOne: true
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -764,6 +806,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "emergency_contacts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "emergency_contacts_user_id_fkey"
             columns: ["user_id"]
@@ -853,6 +902,13 @@ export type Database = {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -907,6 +963,13 @@ export type Database = {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -955,6 +1018,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
             referencedColumns: ["id"]
           },
           {
@@ -1121,9 +1191,13 @@ export type Database = {
           comment: string | null
           created_at: string | null
           id: string
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_notes: string | null
           rating: number | null
           reviewed_id: string
           reviewer_id: string
+          status: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1131,9 +1205,13 @@ export type Database = {
           comment?: string | null
           created_at?: string | null
           id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_notes?: string | null
           rating?: number | null
           reviewed_id: string
           reviewer_id: string
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1141,9 +1219,13 @@ export type Database = {
           comment?: string | null
           created_at?: string | null
           id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_notes?: string | null
           rating?: number | null
           reviewed_id?: string
           reviewer_id?: string
+          status?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1155,10 +1237,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_moderated_by_fkey"
+            columns: ["moderated_by"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_moderated_by_fkey"
+            columns: ["moderated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewed_id_fkey"
+            columns: ["reviewed_id"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_reviewed_id_fkey"
             columns: ["reviewed_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
             referencedColumns: ["id"]
           },
           {
@@ -1196,6 +1306,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ride_passes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ride_passes_user_id_fkey"
             columns: ["user_id"]
@@ -1385,6 +1502,13 @@ export type Database = {
             foreignKeyName: "user_activities_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1393,6 +1517,13 @@ export type Database = {
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
             referencedColumns: ["id"]
           },
           {
@@ -1435,6 +1566,13 @@ export type Database = {
             foreignKeyName: "user_promo_usages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_promo_usages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1442,24 +1580,57 @@ export type Database = {
       }
       users: {
         Row: {
+          block_reason: string | null
+          blocked_at: string | null
+          blocked_by: string | null
           created_at: string | null
+          deleted_at: string | null
           id: string
+          last_login_at: string | null
           role: Database["public"]["Enums"]["user_role_enum"]
+          status: string | null
           updated_at: string | null
         }
         Insert: {
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           id: string
+          last_login_at?: string | null
           role: Database["public"]["Enums"]["user_role_enum"]
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           id?: string
+          last_login_at?: string | null
           role?: Database["public"]["Enums"]["user_role_enum"]
+          status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_blocked_by_fkey"
+            columns: ["blocked_by"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_blocked_by_fkey"
+            columns: ["blocked_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_alerts: {
         Row: {
@@ -1841,6 +2012,13 @@ export type Database = {
             foreignKeyName: "vendors_id_fkey"
             columns: ["id"]
             isOneToOne: true
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendors_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1911,6 +2089,13 @@ export type Database = {
             foreignKeyName: "wallets_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1977,9 +2162,58 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_management_view: {
+        Row: {
+          assigned_region: string | null
+          block_reason: string | null
+          blocked_at: string | null
+          blocked_by: string | null
+          created_at: string | null
+          deleted_at: string | null
+          driver_rating: number | null
+          driver_status:
+            | Database["public"]["Enums"]["driver_status_enum"]
+            | null
+          email: string | null
+          full_name: string | null
+          gst_number: string | null
+          id: string | null
+          last_login_at: string | null
+          loyalty_points: number | null
+          phone_no: string | null
+          profile_picture_url: string | null
+          role: Database["public"]["Enums"]["user_role_enum"] | null
+          status: string | null
+          total_rides: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_blocked_by_fkey"
+            columns: ["blocked_by"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_blocked_by_fkey"
+            columns: ["blocked_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      change_user_role: {
+        Args: {
+          user_uuid: string
+          admin_uuid: string
+          new_role: Database["public"]["Enums"]["user_role_enum"]
+        }
+        Returns: boolean
+      }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2000,6 +2234,19 @@ export type Database = {
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_enum"]
+      }
+      soft_delete_user: {
+        Args: { user_uuid: string; admin_uuid: string }
+        Returns: boolean
+      }
+      toggle_user_block: {
+        Args: {
+          user_uuid: string
+          admin_uuid: string
+          action: string
+          reason?: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
