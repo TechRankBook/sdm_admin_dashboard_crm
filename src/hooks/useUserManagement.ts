@@ -17,11 +17,11 @@ export const useUserManagement = () => {
         .from('user_management_view')
         .select('*')
 
-      if (filters?.role) {
+      if (filters?.role && filters.role !== 'all') {
         query = query.eq('role', filters.role)
       }
 
-      if (filters?.status) {
+      if (filters?.status && filters.status !== 'all') {
         query = query.eq('status', filters.status)
       }
 
@@ -37,11 +37,17 @@ export const useUserManagement = () => {
 
       const { data, error } = await query.order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
+      console.log('Fetched users:', data?.length || 0, 'users')
       setUsers(data || [])
     } catch (error) {
       console.error('Error fetching users:', error)
       toast.error('Failed to fetch users')
+      setUsers([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
@@ -49,11 +55,17 @@ export const useUserManagement = () => {
 
   const fetchStats = async () => {
     try {
+      console.log('Fetching user stats...')
       const { data: users, error } = await supabase
         .from('user_management_view')
         .select('role, status, created_at')
 
-      if (error) throw error
+      if (error) {
+        console.error('Stats query error:', error)
+        throw error
+      }
+
+      console.log('Stats data received:', users?.length || 0, 'records')
 
       const totalUsers = users?.length || 0
       const activeUsers = users?.filter(u => u.status === 'active').length || 0
@@ -72,15 +84,26 @@ export const useUserManagement = () => {
         admins: users?.filter(u => u.role === 'admin').length || 0
       }
 
-      setStats({
+      const statsData = {
         totalUsers,
         activeUsers,
         blockedUsers,
         newUsersThisMonth,
         roleDistribution
-      })
+      }
+
+      console.log('Computed stats:', statsData)
+      setStats(statsData)
     } catch (error) {
       console.error('Error fetching stats:', error)
+      // Set default stats on error
+      setStats({
+        totalUsers: 0,
+        activeUsers: 0,
+        blockedUsers: 0,
+        newUsersThisMonth: 0,
+        roleDistribution: { customers: 0, drivers: 0, vendors: 0, admins: 0 }
+      })
     }
   }
 
@@ -206,6 +229,7 @@ export const useUserManagement = () => {
   }
 
   useEffect(() => {
+    console.log('useUserManagement: Initializing...')
     fetchUsers()
     fetchStats()
   }, [])

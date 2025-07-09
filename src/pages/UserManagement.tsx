@@ -7,7 +7,8 @@ import { UserStatsCards } from '@/components/users/UserStatsCards'
 import { UserFilters } from '@/components/users/UserFilters'
 import { UserManagementTable } from '@/components/users/UserManagementTable'
 import { UserDetailModal } from '@/components/users/UserDetailModal'
-import { Users, Download, RefreshCw } from 'lucide-react'
+import { Users, Download, RefreshCw, AlertCircle } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export const UserManagement: React.FC = () => {
   const {
@@ -75,6 +76,13 @@ export const UserManagement: React.FC = () => {
     window.URL.revokeObjectURL(url)
   }
 
+  console.log('UserManagement render:', { 
+    usersCount: users.length, 
+    loading, 
+    hasStats: !!stats,
+    filtersActive: Object.keys(filters).length > 0
+  })
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -90,7 +98,7 @@ export const UserManagement: React.FC = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" onClick={handleExport} disabled={users.length === 0}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -123,7 +131,15 @@ export const UserManagement: React.FC = () => {
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-2">Loading users...</span>
             </div>
+          ) : users.length === 0 ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No users found. Check your filters or try refreshing the page.
+              </AlertDescription>
+            </Alert>
           ) : (
             <UserManagementTable
               users={users}

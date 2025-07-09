@@ -93,17 +93,17 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
           <div className="space-y-2">
             <Label>Role</Label>
             <Select 
-              value={filters.role || ''} 
+              value={filters.role || 'all'} 
               onValueChange={(value) => onFiltersChange({ 
                 ...filters, 
-                role: value || undefined 
+                role: value === 'all' ? undefined : value 
               })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All roles" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All roles</SelectItem>
+                <SelectItem value="all">All roles</SelectItem>
                 <SelectItem value="customer">Customer</SelectItem>
                 <SelectItem value="driver">Driver</SelectItem>
                 <SelectItem value="vendor">Vendor</SelectItem>
@@ -116,17 +116,17 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
           <div className="space-y-2">
             <Label>Status</Label>
             <Select 
-              value={filters.status || ''} 
+              value={filters.status || 'all'} 
               onValueChange={(value) => onFiltersChange({ 
                 ...filters, 
-                status: value || undefined 
+                status: value === 'all' ? undefined : value 
               })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All statuses</SelectItem>
+                <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="blocked">Blocked</SelectItem>
                 <SelectItem value="suspended">Suspended</SelectItem>
