@@ -58,8 +58,8 @@ export const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-4">
-            <span className="text-white font-bold">FM</span>
+          <div className="mx-auto  h-16  rounded-lg flex items-center justify-center mb-4">
+             <img src="/logo.png" alt="Logo" className="h-10 bg-cover" />
           </div>
           <CardTitle className="text-2xl">Admin Login</CardTitle>
           <CardDescription>
@@ -115,15 +115,6 @@ export const Login: React.FC = () => {
               )}
             </Button>
           </form>
-          
-          <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="text-sm text-blue-800">
-              <p className="font-medium">Debug Information:</p>
-              <p className="text-xs text-blue-600 mt-1">
-                Check browser console (F12) for detailed authentication logs
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
