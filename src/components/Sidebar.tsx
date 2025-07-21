@@ -48,11 +48,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
         to={item.href}
         className={({ isActive }) =>
           cn(
-            'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors group relative',
-            open ? 'justify-start' : 'justify-center',
-            isActive
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            ' px-2 py-2 text-sm font-medium rounded-lg transition-colors ',
+            isActive? 'bg-primary text-primary-foreground':'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+            open ? 'justify-start flex items-center':'justify-center',
+            
           )
         }
       >
@@ -81,24 +80,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          'bg-background border-r border-border flex flex-col transition-all duration-300 ease-in-out relative',
-          open ? 'w-64' : 'w-16'
+          'bg-background border-r border-border flex flex-col transition-all duration-300 ease-in-out relative shadow-lg',
+          open ? 'w-56' : 'w-16'
         )}
       >
         {/* Header with Logo and Toggle */}
         <div className={cn("p-4 border-b border-border", open ? "px-6" : "px-4")}>
           <div className="flex items-center justify-between">
             <div className="flex items-center min-w-0">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-primary-foreground font-bold text-sm">FM</span>
+              <div className="w-8 h-8  rounded-lg flex items-center justify-center flex-shrink-0">
+                {/* <span className="text-primary-foreground font-bold text-sm">FM</span> */}
+                <img src="/logo1.png" alt="Logo" className="h-10 bg-cover" />
               </div>
               {open && (
                 <div className="ml-3 min-w-0">
-                  <h1 className="text-lg font-semibold text-foreground truncate">Fleet Manager</h1>
+                  <h1 className="text-lg font-semibold text-foreground truncate">SDM-Emobility</h1>
                 </div>
               )}
             </div>
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               onClick={onToggle}
@@ -112,12 +112,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-            </Button>
+            </Button> */}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-1 ">
           {navigation.map((item) => (
             <NavigationItem key={item.name} item={item} />
           ))}
