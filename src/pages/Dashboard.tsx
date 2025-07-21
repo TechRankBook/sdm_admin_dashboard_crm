@@ -133,19 +133,19 @@ export const Dashboard: React.FC = () => {
     },
     {
       title: 'Revenue Today',
-      value: `$${stats.revenueToday.toFixed(2)}`,
+      value: `₹${stats.revenueToday.toFixed(2)}`,
       icon: DollarSign,
       description: 'Total earnings today'
     },
     {
       title: 'Revenue This Week',
-      value: `$${stats.revenueWeek.toFixed(2)}`,
+      value: `₹${stats.revenueWeek.toFixed(2)}`,
       icon: DollarSign,
       description: 'Total earnings this week'
     },
     {
       title: 'Revenue This Month',
-      value: `$${stats.revenueMonth.toFixed(2)}`,
+      value: `₹${stats.revenueMonth.toFixed(2)}`,
       icon: DollarSign,
       description: 'Total earnings this month'
     },
