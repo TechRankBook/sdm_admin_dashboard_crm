@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from '@/context/AuthContext'
 import { AuthenticatedApp } from '@/components/AuthenticatedApp'
+import { AuthErrorBoundary } from '@/components/AuthErrorBoundary'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,9 +27,11 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AuthProvider>
-          <AuthenticatedApp />
-        </AuthProvider>
+        <AuthErrorBoundary>
+          <AuthProvider>
+            <AuthenticatedApp />
+          </AuthProvider>
+        </AuthErrorBoundary>
       </TooltipProvider>
     </QueryClientProvider>
   )

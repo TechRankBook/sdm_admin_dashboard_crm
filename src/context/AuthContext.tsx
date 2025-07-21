@@ -30,10 +30,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Set up auth listener first to catch any immediate events
         authLog("Setting up auth state listener")
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, newSession) => {
+          (event, newSession) => {
             if (cleanup) return
             authLog("Auth state change event:", event)
-            await handleSessionUpdate(newSession, 'listener')
+            // Use setTimeout to prevent potential race conditions
+            setTimeout(() => {
+              if (!cleanup) {
+                handleSessionUpdate(newSession, 'listener')
+              }
+            }, 0)
           }
         )
 
@@ -72,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authLog("SAFETY TIMEOUT: Force clearing loading state")
         clearLoading()
       }
-    }, 3000) // Reduced to 3 seconds for faster recovery
+    }, 2000) // Reduced to 2 seconds for faster recovery
 
     const cleanupPromise = initializeAuth()
 
@@ -136,5 +141,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  // Always provide the context value, even during transitions
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
