@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
+import { supabase,SUPABASE_URL } from '@/lib/supabase'
 import { useDrivers } from '@/hooks/useDrivers'
 import { driverFormSchema, type DriverFormData } from './DriverFormSchema'
 
@@ -22,8 +22,8 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone')
   const [otpCode, setOtpCode] = useState('')
-  const [verificationId, setVerificationId] = useState('')
-  
+  const [phoneNumberForOtp, setPhoneNumberForOtp] = useState('') // Stores the phone number that received the OTP
+
   const { refetch } = useDrivers()
 
   const form = useForm<DriverFormData>({
@@ -31,157 +31,168 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
     defaultValues: {
       full_name: '',
       email: '',
-      phone_no: '',
+      phone_no: '', // This field will be pre-filled after OTP is sent/verified
       license_number: '',
-      status: 'active'
+      status: 'active',
+      profile_picture: undefined, // Ensure this is handled correctly for file input
     }
   })
 
-  const sendOTP = async (phoneNumber: string) => {
+  /**
+   * Handles sending the OTP to the provided phone number using a Supabase Edge Function.
+   * This prevents client-side session interference.
+   */
+  const sendOTP = async () => {
     setIsSubmitting(true)
+    const phoneNumber = form.getValues('phone_no') // Get phone number from the form
+
+    if (!phoneNumber) {
+      toast.error('Please enter a phone number.')
+      setIsSubmitting(false)
+      return
+    }
+
+    // Check if SUPABASE_URL is available from the imported lib/supabase
+    if (!SUPABASE_URL) {
+      toast.error('Supabase URL is not configured. Please check your Supabase client setup in lib/supabase.ts.')
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phoneNumber,
-        options: {
-          channel: 'sms'
-        }
+      // Call the 'send-driver-otp' Edge Function using the imported SUPABASE_URL
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/send-driver-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // No Authorization header needed here as the Edge Function uses Service Role Key
+        },
+        body: JSON.stringify({ phone_no: phoneNumber }),
       })
 
-      if (error) {
-        console.error('OTP send error:', error)
-        toast.error(`Failed to send OTP: ${error.message}`)
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('OTP send error:', result.error)
+        toast.error(`Failed to send OTP: ${result.error || 'Unknown error'}`)
         return
       }
 
-      setVerificationId(phoneNumber)
-      setStep('otp')
+      // Store the phone number that received the OTP for the next step
+      setPhoneNumberForOtp(phoneNumber)
+      setStep('otp') // Move to the OTP verification step
       toast.success('OTP sent successfully!')
     } catch (error) {
-      console.error('Unexpected error:', error)
+      console.error('Unexpected error during send OTP:', error)
       toast.error('An unexpected error occurred while sending OTP')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const verifyOTP = async () => {
-    setIsSubmitting(true)
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: verificationId,
-        token: otpCode,
-        type: 'sms'
-      })
-
-      if (error) {
-        console.error('OTP verification error:', error)
-        toast.error(`Failed to verify OTP: ${error.message}`)
-        return
-      }
-
-      if (data.user) {
-        // Set user role to driver
-        const { error: roleError } = await supabase
-          .from('users')
-          .upsert({
-            id: data.user.id,
-            role: 'driver'
-          })
-
-        if (roleError) {
-          console.error('Role error:', roleError)
-          toast.error('Failed to set driver role')
-          return
-        }
-
-        // Pre-fill phone number and move to details step
-        form.setValue('phone_no', verificationId)
-        setStep('details')
-        toast.success('Phone verified successfully!')
-      }
-    } catch (error) {
-      console.error('Unexpected error:', error)
-      toast.error('An unexpected error occurred during verification')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
+  /**
+   * Handles the final submission of driver details.
+   * This function now also triggers the OTP verification via the 'create-driver' Edge Function.
+   */
   const handleSubmit = async (data: DriverFormData) => {
     setIsSubmitting(true)
 
-    try {
-      // Get current user (should be the verified driver)
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('No authenticated user found')
-        return
-      }
+    // Ensure OTP is provided before attempting to create the driver
+    if (otpCode.length !== 6) {
+      toast.error('Please enter the 6-digit OTP.')
+      setIsSubmitting(false)
+      return
+    }
 
-      let profilePictureUrl = ''
+    // Check if SUPABASE_URL is available from the imported lib/supabase
+    if (!SUPABASE_URL) {
+      toast.error('Supabase URL is not configured. Please check your Supabase client setup in lib/supabase.ts.')
+      setIsSubmitting(false);
+      return;
+    }
 
-      // Upload profile picture if provided
-      if (data.profile_picture) {
-        const fileExt = data.profile_picture.name.split('.').pop()
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        
-        const { error: uploadError } = await supabase.storage
-          .from('drivers-profile-pictures')
-          .upload(fileName, data.profile_picture)
+    let profilePictureUrl = ''
+    // Handle profile picture upload client-side to Supabase Storage
+    if (data.profile_picture) {
+      const fileExt = data.profile_picture.name.split('.').pop()
+      // Create a unique file name to avoid collisions
+      const fileName = `${Date.now()}-${data.profile_picture.name.replace(/\s/g, '_')}` 
+      const filePath = `${fileName}`
 
-        if (uploadError) {
-          console.error('Profile picture upload error:', uploadError)
-          toast.error('Failed to upload profile picture, but driver will be created without it')
-        } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('drivers-profile-pictures')
-            .getPublicUrl(fileName)
-          
-          profilePictureUrl = publicUrl
-        }
-      }
-
-      // Create driver profile in database
-      const { error: insertError } = await supabase
-        .from('drivers')
-        .insert({
-          id: user.id,
-          full_name: data.full_name,
-          email: data.email,
-          phone_no: data.phone_no,
-          license_number: data.license_number,
-          profile_picture_url: profilePictureUrl || null,
-          status: data.status,
-          rating: 0.0,
-          total_rides: 0
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('drivers-profile-pictures')
+        .upload(filePath, data.profile_picture, {
+          cacheControl: '3600', // Cache for 1 hour
+          upsert: false, // Do not overwrite existing files with the same name
         })
 
-      if (insertError) {
-        console.error('Driver profile creation error:', insertError)
-        toast.error(`Failed to create driver profile: ${insertError.message}`)
+      if (uploadError) {
+        console.error('Profile picture upload error:', uploadError)
+        toast.error('Failed to upload profile picture. Driver will be created without it.')
+        profilePictureUrl = '' // Ensure URL is empty if upload fails
+      } else {
+        // Get the public URL of the uploaded picture
+        const { data: { publicUrl } } = supabase.storage
+          .from('drivers-profile-pictures')
+          .getPublicUrl(filePath)
+        
+        profilePictureUrl = publicUrl
+        toast.success('Profile picture uploaded successfully!')
+      }
+    }
+
+    try {
+      // Call the 'create-driver' Edge Function using the imported SUPABASE_URL
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/create-driver`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // No Authorization header needed here as the Edge Function uses Service Role Key
+        },
+        body: JSON.stringify({
+          phone_no: phoneNumberForOtp, // Use the phone number that received the OTP
+          otp_code: otpCode,
+          full_name: data.full_name,
+          email: data.email,
+          license_number: data.license_number,
+          status: data.status,
+          profile_picture_url: profilePictureUrl, // Pass the uploaded URL
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('Driver creation error:', result.error)
+        toast.error(`Failed to create driver: ${result.error || 'Unknown error'}`)
         return
       }
 
       toast.success('Driver created successfully!')
-      refetch()
-      handleClose()
+      refetch() // Refetch driver data to update the UI
+      handleClose() // Close modal and reset state
     } catch (error) {
-      console.error('Unexpected error:', error)
+      console.error('Unexpected error during driver creation:', error)
       toast.error('An unexpected error occurred while creating the driver')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  /**
+   * Resets the modal state and closes it.
+   */
   const handleClose = () => {
-    onOpenChange(false)
-    form.reset()
-    setStep('phone')
-    setOtpCode('')
-    setVerificationId('')
+    onOpenChange(false) // Call parent's onOpenChange to close the dialog
+    form.reset() // Reset form fields to default values
+    setStep('phone') // Go back to the first step
+    setOtpCode('') // Clear OTP
+    setPhoneNumberForOtp('') // Clear stored phone number for OTP
   }
 
+  /**
+   * Renders the content of the modal based on the current step.
+   */
   const renderStepContent = () => {
     switch (step) {
       case 'phone':
@@ -205,9 +216,9 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
                 <Button type="button" variant="outline" onClick={handleClose}>
                   Cancel
                 </Button>
-                <Button 
-                  type="button" 
-                  onClick={() => sendOTP(form.getValues('phone_no'))}
+                <Button
+                  type="button"
+                  onClick={sendOTP} // Call the sendOTP function to trigger Edge Function
                   disabled={isSubmitting || !form.getValues('phone_no')}
                 >
                   {isSubmitting ? 'Sending...' : 'Send OTP'}
@@ -222,7 +233,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
           <div className="space-y-4">
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-4">
-                Enter the 6-digit code sent to {verificationId}
+                Enter the 6-digit code sent to {phoneNumberForOtp}
               </p>
               <InputOTP
                 value={otpCode}
@@ -244,12 +255,12 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
               <Button type="button" variant="outline" onClick={() => setStep('phone')}>
                 Back
               </Button>
-              <Button 
-                type="button" 
-                onClick={verifyOTP}
+              <Button
+                type="button"
+                onClick={() => setStep('details')} // Simply move to details step, actual OTP verification is on final submit
                 disabled={isSubmitting || otpCode.length !== 6}
               >
-                {isSubmitting ? 'Verifying...' : 'Verify OTP'}
+                Continue
               </Button>
             </DialogFooter>
           </div>
@@ -258,6 +269,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
       case 'details':
         return (
           <Form {...form}>
+            {/* The form's onSubmit will now call handleSubmit, which in turn calls the Edge Function */}
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
@@ -294,7 +306,8 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter phone number" disabled />
+                      {/* Display the phone number that received the OTP, make it disabled */}
+                      <Input value={phoneNumberForOtp} placeholder="Enter phone number" disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
