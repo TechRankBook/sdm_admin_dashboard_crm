@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Edit, FileText, Car, Trash2 } from 'lucide-react'
 import { Vehicle } from '@/types/database'
+import { useNavigate } from 'react-router-dom'
 
 interface VehicleCardProps {
   vehicle: Vehicle
@@ -25,6 +26,10 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
   onDelete,
   onViewServiceLogs
 }) => {
+  const navigate = useNavigate();
+  const handleViewVehicle = (vehicle:Vehicle) => {
+    navigate(`/vehicles/${vehicle.id}`)
+  }
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -79,7 +84,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
         </div>
 
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" className="flex-1" onClick={() => window.location.href = `/vehicles/${vehicle.id}`}>
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewVehicle(vehicle)}>
             <Car className="h-4 w-4 mr-1" />
             View Details
           </Button>
