@@ -20,6 +20,7 @@ import { Settings } from '@/pages/Settings'
 import { VehicleDetailView } from '@/components/vehicles/VehicleDetailView'
 import { DriverDetailView } from '@/components/drivers/DriverDetailView'
 import { BookingDetailView } from '@/components/booking/BookingDetailView'
+import { Notifications } from '@/pages/Notifications'
 
 export const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated, isAdmin } = useAuth()
@@ -71,7 +72,7 @@ export const AuthenticatedApp: React.FC = () => {
           <Route path="documents" element={<Documents />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="profile" element={<AdminProfile />} />
-          <Route path="notifications" element={<div className="p-6">Notifications page coming soon...</div>} />
+          <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
           <Route path="login" element={<Navigate to="/dashboard" replace />} />
         </Route>

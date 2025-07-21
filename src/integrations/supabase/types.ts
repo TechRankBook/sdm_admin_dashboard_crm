@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      addresses: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          building_no: string
+          created_at: string | null
+          email: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          other_type: string | null
+          phone: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          building_no: string
+          created_at?: string | null
+          email?: string | null
+          id: string
+          is_default?: boolean | null
+          name: string
+          other_type?: string | null
+          phone: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          building_no?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          other_type?: string | null
+          phone?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_settings: {
         Row: {
           category: string
@@ -495,6 +540,57 @@ export type Database = {
           },
         ]
       }
+      chatbot_session_state: {
+        Row: {
+          created_at: string
+          current_step: string
+          id: string
+          last_interaction_at: string
+          session_data: Json | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          whatsapp_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_step?: string
+          id?: string
+          last_interaction_at?: string
+          session_data?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          whatsapp_user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_step?: string
+          id?: string
+          last_interaction_at?: string
+          session_data?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          whatsapp_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_session_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chatbot_session_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_threads: {
         Row: {
           assigned_admin_id: string | null
@@ -864,6 +960,113 @@ export type Database = {
           },
         ]
       }
+      faq_options: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      faq_views: {
+        Row: {
+          faq_id: number | null
+          id: number
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          faq_id?: number | null
+          id?: number
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          faq_id?: number | null
+          id?: number
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faq_views_faq_id_fkey"
+            columns: ["faq_id"]
+            isOneToOne: false
+            referencedRelation: "faq_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback: {
+        Row: {
+          contact_info: string | null
+          created_at: string | null
+          description: string
+          feedback_type: string
+          id: number
+          image_urls: string[] | null
+          issue_type: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          contact_info?: string | null
+          created_at?: string | null
+          description: string
+          feedback_type: string
+          id?: number
+          image_urls?: string[] | null
+          issue_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          contact_info?: string | null
+          created_at?: string | null
+          description?: string
+          feedback_type?: string
+          id?: number
+          image_urls?: string[] | null
+          issue_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      feedback_actions: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: number
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: number
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       message_attachments: {
         Row: {
           created_at: string
@@ -963,44 +1166,250 @@ export type Database = {
           },
         ]
       }
+      notification_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delivered_count: number | null
+          description: string | null
+          failed_count: number | null
+          id: string
+          name: string
+          scheduled_at: string | null
+          sent_count: number | null
+          status: string
+          target_criteria: Json
+          template_id: string | null
+          total_recipients: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number | null
+          description?: string | null
+          failed_count?: number | null
+          id?: string
+          name: string
+          scheduled_at?: string | null
+          sent_count?: number | null
+          status?: string
+          target_criteria: Json
+          template_id?: string | null
+          total_recipients?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number | null
+          description?: string | null
+          failed_count?: number | null
+          id?: string
+          name?: string
+          scheduled_at?: string | null
+          sent_count?: number | null
+          status?: string
+          target_criteria?: Json
+          template_id?: string | null
+          total_recipients?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_delivery_logs: {
+        Row: {
+          id: string
+          notification_id: string | null
+          provider: string | null
+          provider_response: Json | null
+          status: string
+          timestamp: string
+        }
+        Insert: {
+          id?: string
+          notification_id?: string | null
+          provider?: string | null
+          provider_response?: Json | null
+          status: string
+          timestamp?: string
+        }
+        Update: {
+          id?: string
+          notification_id?: string | null
+          provider?: string | null
+          provider_response?: Json | null
+          status?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_delivery_logs_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_templates: {
+        Row: {
+          channel: Database["public"]["Enums"]["notification_channel_enum"]
+          content: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          subject: string | null
+          template_type: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["notification_channel_enum"]
+          content: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          subject?: string | null
+          template_type?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["notification_channel_enum"]
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string | null
+          template_type?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_management_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
+          campaign_id: string | null
           channel:
             | Database["public"]["Enums"]["notification_channel_enum"]
             | null
           created_at: string | null
+          delivered_at: string | null
+          delivery_attempts: number | null
+          delivery_status: string | null
+          external_id: string | null
+          failed_reason: string | null
           id: string
           message: string | null
+          metadata: Json | null
           read: boolean | null
           sent_at: string | null
+          template_id: string | null
           title: string | null
           user_id: string | null
         }
         Insert: {
+          campaign_id?: string | null
           channel?:
             | Database["public"]["Enums"]["notification_channel_enum"]
             | null
           created_at?: string | null
+          delivered_at?: string | null
+          delivery_attempts?: number | null
+          delivery_status?: string | null
+          external_id?: string | null
+          failed_reason?: string | null
           id?: string
           message?: string | null
+          metadata?: Json | null
           read?: boolean | null
           sent_at?: string | null
+          template_id?: string | null
           title?: string | null
           user_id?: string | null
         }
         Update: {
+          campaign_id?: string | null
           channel?:
             | Database["public"]["Enums"]["notification_channel_enum"]
             | null
           created_at?: string | null
+          delivered_at?: string | null
+          delivery_attempts?: number | null
+          delivery_status?: string | null
+          external_id?: string | null
+          failed_reason?: string | null
           id?: string
           message?: string | null
+          metadata?: Json | null
           read?: boolean | null
           sent_at?: string | null
+          template_id?: string | null
           title?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "notification_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
@@ -1026,6 +1435,7 @@ export type Database = {
           gateway_response: Json | null
           id: string
           status: Database["public"]["Enums"]["payment_status_enum"] | null
+          stripe_payment_intent_id: string | null
           transaction_id: string | null
           updated_at: string | null
           user_id: string | null
@@ -1038,6 +1448,7 @@ export type Database = {
           gateway_response?: Json | null
           id?: string
           status?: Database["public"]["Enums"]["payment_status_enum"] | null
+          stripe_payment_intent_id?: string | null
           transaction_id?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -1050,6 +1461,7 @@ export type Database = {
           gateway_response?: Json | null
           id?: string
           status?: Database["public"]["Enums"]["payment_status_enum"] | null
+          stripe_payment_intent_id?: string | null
           transaction_id?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -1498,6 +1910,30 @@ export type Database = {
           },
         ]
       }
+      table_name: {
+        Row: {
+          data: Json | null
+          id: number
+          inserted_at: string
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          data?: Json | null
+          id?: number
+          inserted_at?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          data?: Json | null
+          id?: number
+          inserted_at?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_activities: {
         Row: {
           activity_type: string
@@ -1619,6 +2055,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_rewards: {
+        Row: {
+          co2_reduced: number
+          created_at: string | null
+          fuel_saved: number
+          id: string
+          progress: number
+          trees_saved: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          co2_reduced?: number
+          created_at?: string | null
+          fuel_saved?: number
+          id?: string
+          progress?: number
+          trees_saved?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          co2_reduced?: number
+          created_at?: string | null
+          fuel_saved?: number
+          id?: string
+          progress?: number
+          trees_saved?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string | null
+          dark_mode_enabled: boolean | null
+          notifications_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dark_mode_enabled?: boolean | null
+          notifications_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dark_mode_enabled?: boolean | null
+          notifications_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       users: {
         Row: {
@@ -2307,6 +2800,17 @@ export type Database = {
           end_time: string
         }[]
       }
+      get_notification_analytics: {
+        Args: { start_date?: string; end_date?: string }
+        Returns: {
+          total_sent: number
+          total_delivered: number
+          total_failed: number
+          delivery_rate: number
+          channel_breakdown: Json
+          daily_stats: Json
+        }[]
+      }
       get_revenue_analytics: {
         Args: { start_date?: string; end_date?: string }
         Returns: {
@@ -2343,6 +2847,18 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_enum"]
       }
+      send_notification: {
+        Args: {
+          p_user_id: string
+          p_channel: Database["public"]["Enums"]["notification_channel_enum"]
+          p_title: string
+          p_message: string
+          p_template_id?: string
+          p_campaign_id?: string
+          p_metadata?: Json
+        }
+        Returns: string
+      }
       soft_delete_user: {
         Args: { user_uuid: string; admin_uuid: string }
         Returns: boolean
@@ -2378,7 +2894,12 @@ export type Database = {
         | "no_driver"
       driver_status_enum: "active" | "inactive" | "on_break"
       maintenance_log_status_enum: "pending" | "completed"
-      notification_channel_enum: "in_app" | "sms" | "whatsapp" | "call"
+      notification_channel_enum:
+        | "in_app"
+        | "sms"
+        | "whatsapp"
+        | "call"
+        | "email"
       payment_status_enum: "pending" | "paid" | "failed"
       user_role_enum: "customer" | "driver" | "admin" | "vendor"
       vehicle_status_enum:
@@ -2527,7 +3048,7 @@ export const Constants = {
       ],
       driver_status_enum: ["active", "inactive", "on_break"],
       maintenance_log_status_enum: ["pending", "completed"],
-      notification_channel_enum: ["in_app", "sms", "whatsapp", "call"],
+      notification_channel_enum: ["in_app", "sms", "whatsapp", "call", "email"],
       payment_status_enum: ["pending", "paid", "failed"],
       user_role_enum: ["customer", "driver", "admin", "vendor"],
       vehicle_status_enum: [
