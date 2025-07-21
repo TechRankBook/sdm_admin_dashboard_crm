@@ -23,9 +23,23 @@ import { BookingDetailView } from '@/components/booking/BookingDetailView'
 import { Notifications } from '@/pages/Notifications'
 
 export const AuthenticatedApp: React.FC = () => {
-  const { isAuthenticated, isAdmin } = useAuth()
+  const { isAuthenticated, isAdmin, loading, userRole } = useAuth()
 
-  console.log("AuthenticatedApp: Auth state - isAuthenticated:", isAuthenticated, "isAdmin:", isAdmin)
+  console.log("AuthenticatedApp: Auth state - isAuthenticated:", isAuthenticated, "isAdmin:", isAdmin, "loading:", loading, "userRole:", userRole)
+
+  // Show loading while authentication state is being determined
+  if (loading) {
+    console.log("AuthenticatedApp: Still loading auth state")
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Loading application...</p>
+          <p className="text-sm text-gray-400 mt-2">Checking authentication...</p>
+        </div>
+      </div>
+    )
+  }
 
   // If not authenticated, show login page
   if (!isAuthenticated) {
@@ -39,15 +53,29 @@ export const AuthenticatedApp: React.FC = () => {
     )
   }
 
-  // If authenticated but not admin, show login page with error
-  if (!isAdmin) {
-    console.log("AuthenticatedApp: Authenticated but not admin, showing login")
+  // If authenticated but role is not admin (and role fetch is complete), show login with error
+  if (isAuthenticated && userRole !== null && !isAdmin) {
+    console.log("AuthenticatedApp: Authenticated but not admin, showing login with error")
     return (
       <BrowserRouter>
         <Routes>
           <Route path="*" element={<Login />} />
         </Routes>
       </BrowserRouter>
+    )
+  }
+
+  // If authenticated but role is still being fetched, show loading
+  if (isAuthenticated && userRole === null) {
+    console.log("AuthenticatedApp: Authenticated but role still loading")
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Verifying permissions...</p>
+          <p className="text-sm text-gray-400 mt-2">Please wait...</p>
+        </div>
+      </div>
     )
   }
 

@@ -23,45 +23,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     authLog("Initializing AuthProvider")
     let cleanup = false
+    let timeoutId: NodeJS.Timeout
 
     const initializeAuth = async () => {
       try {
-        // Get initial session first to minimize flickering
-        authLog("Getting initial session")
-        try {
-          const { data: { session: initialSession }, error } = await supabase.auth.getSession()
-
-          if (cleanup) return
-
-          if (error) {
-            authLog("Error getting initial session:", error.message)
-          } else {
-            authLog("Initial session retrieved:", !!initialSession)
-            await handleSessionUpdate(initialSession, 'initial')
-          }
-        } catch (error: any) {
-          if (cleanup) return
-          authLog("Error during initial session check:", error.message)
-          clearLoading()
-        }
-
-        // Set up auth listener after initial session check
+        // Set up auth listener first to catch any immediate events
         authLog("Setting up auth state listener")
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, newSession) => {
             if (cleanup) return
             authLog("Auth state change event:", event)
-            
-            // Only update if this is a real change, not a duplicate
             await handleSessionUpdate(newSession, 'listener')
           }
         )
+
+        // Then get initial session
+        authLog("Getting initial session")
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
+
+        if (cleanup) return
+
+        if (error) {
+          authLog("Error getting initial session:", error.message)
+          clearLoading()
+        } else {
+          authLog("Initial session retrieved:", !!initialSession)
+          await handleSessionUpdate(initialSession, 'initial')
+        }
 
         // Cleanup function
         return () => {
           authLog("Cleaning up auth subscription")
           cleanup = true
           subscription.unsubscribe()
+          if (timeoutId) clearTimeout(timeoutId)
         }
 
       } catch (error: any) {
@@ -71,19 +66,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Add safety timeout to absolutely guarantee loading is cleared
-    const safetyTimeout = setTimeout(() => {
+    // Safety timeout to absolutely guarantee loading is cleared
+    timeoutId = setTimeout(() => {
       if (!cleanup) {
         authLog("SAFETY TIMEOUT: Force clearing loading state")
         clearLoading()
       }
-    }, 5000) // Reduced to 5 seconds for faster recovery
+    }, 3000) // Reduced to 3 seconds for faster recovery
 
     const cleanupPromise = initializeAuth()
 
     return () => {
       cleanup = true
-      clearTimeout(safetyTimeout)
+      if (timeoutId) clearTimeout(timeoutId)
       cleanupPromise.then(cleanupFn => {
         if (cleanupFn) cleanupFn()
       })

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { AuthState } from '@/types/auth'
@@ -17,42 +16,46 @@ export const useAuthState = () => {
   const handleSessionUpdate = useCallback(async (newSession: Session | null, source: string) => {
     authLog(`Session update from ${source}:`, !!newSession)
     
-    // Always update session and user first
-    setAuthState(prev => ({
-      ...prev,
-      session: newSession,
-      user: newSession?.user ?? null,
-    }))
-
     if (newSession?.user) {
+      // Set session and user immediately
+      setAuthState(prev => ({
+        ...prev,
+        session: newSession,
+        user: newSession.user,
+        loading: true, // Keep loading while fetching role
+      }))
+
       try {
         authLog("Fetching role for authenticated user")
         const role = await fetchUserRole(newSession.user.id)
         
+        // Update with role and clear loading
         setAuthState(prev => ({
           ...prev,
           userRole: role,
-          loading: false, // Always clear loading after role fetch
+          loading: false,
         }))
         
         authLog("Role set successfully:", role)
       } catch (error: any) {
         authLog("Failed to fetch user role:", error.message)
         
-        // On role fetch failure, preserve previous role if it exists to prevent flickering
+        // On role fetch failure, set loading to false but keep user/session
         setAuthState(prev => ({
           ...prev,
-          userRole: prev.userRole || null, // Keep existing role if available
+          userRole: null,
           loading: false,
         }))
       }
     } else {
-      authLog("No session, clearing role and loading")
-      setAuthState(prev => ({
-        ...prev,
+      // No session - clear everything
+      authLog("No session, clearing all auth state")
+      setAuthState({
+        user: null,
+        session: null,
         userRole: null,
         loading: false,
-      }))
+      })
     }
   }, [])
 
