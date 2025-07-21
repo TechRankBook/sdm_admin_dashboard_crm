@@ -1,16 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Input } from '@/components/ui/input'
-import { Loader } from '@googlemaps/js-api-loader'
 import { MapPin } from 'lucide-react'
-
-// Add Google Maps types
-declare global {
-  interface Window {
-    google: any
-  }
-}
-
-declare const google: any
+import { supabase } from '@/lib/supabase'
 
 interface GooglePlacesInputProps {
   value: string
@@ -20,8 +11,6 @@ interface GooglePlacesInputProps {
   id?: string
 }
 
-const GOOGLE_PLACES_API_KEY = 'AIzaSyA7sn0fs6f0vRDm3RIkRKn_R-haAgH4M0A'
-
 export const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
   value,
   onChange,
@@ -29,76 +18,117 @@ export const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
   className,
   id
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const autocompleteRef = useRef<any>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [sessionToken] = useState(() => Math.random().toString(36).substring(7))
 
-  useEffect(() => {
-    const initializeAutocomplete = async () => {
-      try {
-        const loader = new Loader({
-          apiKey: GOOGLE_PLACES_API_KEY,
-          version: 'weekly',
-          libraries: ['places']
-        })
+  const searchPlaces = async (input: string) => {
+    if (!input.trim() || input.length < 3) {
+      setSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
 
-        await loader.load()
-        setIsLoaded(true)
-
-        if (inputRef.current && !autocompleteRef.current && window.google) {
-          autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-            fields: ['formatted_address', 'geometry.location', 'name'],
-            types: ['establishment', 'geocode']
-          })
-
-          autocompleteRef.current.addListener('place_changed', () => {
-            const place = autocompleteRef.current?.getPlace()
-            if (place?.formatted_address && place?.geometry?.location) {
-              onChange(place.formatted_address, {
-                lat: place.geometry.location.lat(),
-                lng: place.geometry.location.lng()
-              })
-            } else if (place?.name) {
-              onChange(place.name)
-            }
-          })
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('google-maps', {
+        body: {
+          action: 'places_autocomplete',
+          input: input.trim(),
+          sessionToken
         }
-      } catch (error) {
-        console.error('Error loading Google Places API:', error)
-        setIsLoaded(false)
-      }
-    }
+      })
 
-    initializeAutocomplete()
+      if (error) throw error
 
-    return () => {
-      if (autocompleteRef.current && window.google) {
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current)
-        autocompleteRef.current = null
+      if (data.predictions) {
+        setSuggestions(data.predictions)
+        setShowSuggestions(true)
       }
+    } catch (error) {
+      console.error('Error searching places:', error)
+      setSuggestions([])
+    } finally {
+      setIsLoading(false)
     }
-  }, [onChange])
+  }
+
+  const handlePlaceSelect = async (placeId: string, description: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('google-maps', {
+        body: {
+          action: 'place_details',
+          placeId
+        }
+      })
+
+      if (error) throw error
+
+      if (data.result) {
+        const { formatted_address, geometry } = data.result
+        onChange(formatted_address, {
+          lat: geometry.location.lat,
+          lng: geometry.location.lng
+        })
+      } else {
+        onChange(description)
+      }
+    } catch (error) {
+      console.error('Error getting place details:', error)
+      onChange(description)
+    } finally {
+      setShowSuggestions(false)
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value)
+    const newValue = e.target.value
+    onChange(newValue)
+    searchPlaces(newValue)
+  }
+
+  const handleInputBlur = () => {
+    // Delay hiding suggestions to allow for clicks
+    setTimeout(() => setShowSuggestions(false), 150)
   }
 
   return (
     <div className="relative">
-      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground z-10">
         <MapPin className="h-4 w-4" />
       </div>
       <Input
-        ref={inputRef}
         id={id}
         value={value}
         onChange={handleInputChange}
+        onBlur={handleInputBlur}
+        onFocus={() => value.length >= 3 && setShowSuggestions(true)}
         placeholder={placeholder}
         className={`pl-10 ${className}`}
+        autoComplete="off"
       />
-      {!isLoaded && (
+      {isLoading && (
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+        </div>
+      )}
+      
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {suggestions.map((suggestion, index) => (
+            <button
+              key={suggestion.place_id || index}
+              type="button"
+              className="w-full px-4 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none text-sm"
+              onClick={() => handlePlaceSelect(suggestion.place_id, suggestion.description)}
+            >
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <span className="truncate">{suggestion.description}</span>
+              </div>
+            </button>
+          ))}
         </div>
       )}
     </div>
