@@ -1,6 +1,6 @@
 
 import React from 'react'
-import { Menu, Bell, User, Settings, LogOut, Eye, Edit3 } from 'lucide-react'
+import { Menu, Bell, User, Settings, LogOut, Eye, Edit3 ,PanelLeftClose,PanelLeftOpen, PanelLeft } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   }
 
   return (
-    <header className="bg-background border-b border-border px-6 py-4">
+    <header className="bg-background border-b border-border px-6 py-3 shadow-md">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
@@ -48,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             onClick={onMenuClick}
             className="flex items-center"
           >
-            <Menu className="h-5 w-5" />
+          <PanelLeft className="h-5 w-5" />
           </Button>
         </div>
 
@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           {/* Admin Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-3 px-3 py-2 h-auto">
+              <Button variant="ghost" className="flex items-center space-x-3 px-3 py-1">
                 <UserAvatar
                   name={adminName}
                   email={adminEmail}
