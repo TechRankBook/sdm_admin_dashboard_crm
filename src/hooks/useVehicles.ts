@@ -26,6 +26,19 @@ export const useVehicles = () => {
 
   useEffect(() => {
     fetchVehicles()
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('vehicles-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'vehicles' },
+        () => fetchVehicles()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   return { vehicles, loading, refetch: fetchVehicles }

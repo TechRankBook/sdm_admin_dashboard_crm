@@ -232,6 +232,46 @@ export const useUserManagement = () => {
     console.log('useUserManagement: Initializing...')
     fetchUsers()
     fetchStats()
+
+    // Set up real-time subscriptions for user management
+    const usersChannel = supabase
+      .channel('users-management-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'users' },
+        () => {
+          fetchUsers()
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    const customersChannel = supabase
+      .channel('customers-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'customers' },
+        () => {
+          fetchUsers()
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    const adminsChannel = supabase
+      .channel('admins-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'admins' },
+        () => {
+          fetchUsers()
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(usersChannel)
+      supabase.removeChannel(customersChannel)
+      supabase.removeChannel(adminsChannel)
+    }
   }, [])
 
   return {

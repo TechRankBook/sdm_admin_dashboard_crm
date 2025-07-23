@@ -185,6 +185,31 @@ export const useProfile = () => {
     }
   })
 
+  // Set up real-time subscription for profile updates
+  useEffect(() => {
+    if (!user?.id) return
+
+    const channel = supabase
+      .channel('profile-changes')
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'admins', filter: `id=eq.${user.id}` },
+        () => queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      )
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'customers', filter: `id=eq.${user.id}` },
+        () => queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      )
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'drivers', filter: `id=eq.${user.id}` },
+        () => queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, queryClient])
+
   return {
     profile,
     profileLoading,
