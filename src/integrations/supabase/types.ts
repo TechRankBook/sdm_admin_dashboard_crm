@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      _realtime_schema_migrations: {
+        Row: {
+          id: number
+          inserted_at: string
+          version: string
+        }
+        Insert: {
+          id?: number
+          inserted_at?: string
+          version: string
+        }
+        Update: {
+          id?: number
+          inserted_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      about_page: {
+        Row: {
+          copyright: string
+          created_at: string | null
+          description: string
+          id: number
+          title: string
+          version: string
+        }
+        Insert: {
+          copyright: string
+          created_at?: string | null
+          description: string
+          id?: number
+          title: string
+          version: string
+        }
+        Update: {
+          copyright?: string
+          created_at?: string | null
+          description?: string
+          id?: number
+          title?: string
+          version?: string
+        }
+        Relationships: []
+      }
       addresses: {
         Row: {
           address_line1: string
@@ -684,6 +729,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contact_messages: {
+        Row: {
+          created_at: string | null
+          email: string
+          first_name: string
+          id: string
+          is_read: boolean | null
+          last_name: string
+          message: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          first_name: string
+          id?: string
+          is_read?: boolean | null
+          last_name: string
+          message: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          is_read?: boolean | null
+          last_name?: string
+          message?: string
+        }
+        Relationships: []
       }
       customer_saved_locations: {
         Row: {
@@ -1776,6 +1851,42 @@ export type Database = {
           },
         ]
       }
+      saved_locations: {
+        Row: {
+          address: string
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          latitude: number
+          longitude: number
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          latitude: number
+          longitude: number
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          latitude?: number
+          longitude?: number
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       service_types: {
         Row: {
           created_at: string
@@ -2013,6 +2124,33 @@ export type Database = {
           },
         ]
       }
+      user_preferences: {
+        Row: {
+          created_at: string
+          dark_mode: boolean
+          email_notifications: boolean
+          notification_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dark_mode?: boolean
+          email_notifications?: boolean
+          notification_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dark_mode?: boolean
+          email_notifications?: boolean
+          notification_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_promo_usages: {
         Row: {
           id: string
@@ -2120,8 +2258,11 @@ export type Database = {
           blocked_by: string | null
           created_at: string | null
           deleted_at: string | null
+          email: string | null
           id: string
           last_login_at: string | null
+          name: string | null
+          phone: string | null
           role: Database["public"]["Enums"]["user_role_enum"]
           status: string | null
           updated_at: string | null
@@ -2132,8 +2273,11 @@ export type Database = {
           blocked_by?: string | null
           created_at?: string | null
           deleted_at?: string | null
+          email?: string | null
           id: string
           last_login_at?: string | null
+          name?: string | null
+          phone?: string | null
           role: Database["public"]["Enums"]["user_role_enum"]
           status?: string | null
           updated_at?: string | null
@@ -2144,8 +2288,11 @@ export type Database = {
           blocked_by?: string | null
           created_at?: string | null
           deleted_at?: string | null
+          email?: string | null
           id?: string
           last_login_at?: string | null
+          name?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role_enum"]
           status?: string | null
           updated_at?: string | null
@@ -2210,48 +2357,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vehicle_alerts_vehicle_id_fkey"
-            columns: ["vehicle_id"]
-            isOneToOne: false
-            referencedRelation: "vehicles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      vehicle_assignments: {
-        Row: {
-          assigned_on: string | null
-          driver_id: string
-          id: string
-          status: string | null
-          unassigned_on: string | null
-          vehicle_id: string
-        }
-        Insert: {
-          assigned_on?: string | null
-          driver_id: string
-          id?: string
-          status?: string | null
-          unassigned_on?: string | null
-          vehicle_id: string
-        }
-        Update: {
-          assigned_on?: string | null
-          driver_id?: string
-          id?: string
-          status?: string | null
-          unassigned_on?: string | null
-          vehicle_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vehicle_assignments_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: false
-            referencedRelation: "drivers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vehicle_assignments_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
