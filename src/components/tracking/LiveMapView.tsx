@@ -107,7 +107,10 @@ export const LiveMapView: React.FC = () => {
   // Fetch tracking data
   const fetchTrackingData = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      console.log('Fetching tracking data...')
+      
+      // Fetch all active drivers first
+      const { data: allDrivers, error: driversError } = await supabase
         .from('drivers')
         .select(`
           id,
@@ -116,57 +119,73 @@ export const LiveMapView: React.FC = () => {
           current_latitude,
           current_longitude,
           phone_no,
-          rating,
-          bookings!inner (
-            id,
-            pickup_address,
-            dropoff_address,
-            pickup_latitude,
-            pickup_longitude,
-            dropoff_latitude,
-            dropoff_longitude,
-            status,
-            vehicle:vehicles (
-              make,
-              model,
-              type,
-              license_plate
-            )
-          )
+          rating
         `)
         .eq('status', 'active')
-        .in('bookings.status', ['accepted', 'started'])
 
-      if (error) throw error
+      if (driversError) throw driversError
+      console.log('Active drivers found:', allDrivers?.length || 0, allDrivers)
 
-      const formattedData: TrackingData[] = (data || []).map(driver => ({
-        driver: {
-          id: driver.id,
-          full_name: driver.full_name,
-          status: driver.status,
-          current_latitude: driver.current_latitude,
-          current_longitude: driver.current_longitude,
-          phone_no: driver.phone_no,
-          rating: driver.rating
-        },
-        booking: driver.bookings?.[0] ? {
-          id: driver.bookings[0].id,
-          pickup_address: driver.bookings[0].pickup_address,
-          dropoff_address: driver.bookings[0].dropoff_address,
-          pickup_latitude: driver.bookings[0].pickup_latitude,
-          pickup_longitude: driver.bookings[0].pickup_longitude,
-          dropoff_latitude: driver.bookings[0].dropoff_latitude,
-          dropoff_longitude: driver.bookings[0].dropoff_longitude,
-          status: driver.bookings[0].status
-        } : undefined,
-        vehicle: driver.bookings?.[0]?.vehicle ? {
-          make: (driver.bookings[0].vehicle as any)?.make,
-          model: (driver.bookings[0].vehicle as any)?.model,
-          type: (driver.bookings[0].vehicle as any)?.type,
-          license_plate: (driver.bookings[0].vehicle as any)?.license_plate
-        } : undefined
-      }))
+      // Fetch all active bookings
+      const { data: activeBookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          driver_id,
+          pickup_address,
+          dropoff_address,
+          pickup_latitude,
+          pickup_longitude,
+          dropoff_latitude,
+          dropoff_longitude,
+          status,
+          vehicle_id,
+          vehicles (
+            make,
+            model,
+            type,
+            license_plate
+          )
+        `)
+        .in('status', ['accepted', 'started'])
 
+      if (bookingsError) throw bookingsError
+      console.log('Active bookings found:', activeBookings?.length || 0, activeBookings)
+
+      // Combine the data - include ALL active drivers, with their bookings if they have them
+      const formattedData: TrackingData[] = (allDrivers || []).map(driver => {
+        const driverBooking = activeBookings?.find(booking => booking.driver_id === driver.id)
+        
+        return {
+          driver: {
+            id: driver.id,
+            full_name: driver.full_name,
+            status: driver.status,
+            current_latitude: driver.current_latitude,
+            current_longitude: driver.current_longitude,
+            phone_no: driver.phone_no,
+            rating: driver.rating
+          },
+          booking: driverBooking ? {
+            id: driverBooking.id,
+            pickup_address: driverBooking.pickup_address,
+            dropoff_address: driverBooking.dropoff_address,
+            pickup_latitude: driverBooking.pickup_latitude,
+            pickup_longitude: driverBooking.pickup_longitude,
+            dropoff_latitude: driverBooking.dropoff_latitude,
+            dropoff_longitude: driverBooking.dropoff_longitude,
+            status: driverBooking.status
+          } : undefined,
+          vehicle: driverBooking?.vehicles ? {
+            make: (driverBooking.vehicles as any)?.make,
+            model: (driverBooking.vehicles as any)?.model,
+            type: (driverBooking.vehicles as any)?.type,
+            license_plate: (driverBooking.vehicles as any)?.license_plate
+          } : undefined
+        }
+      })
+
+      console.log('Formatted tracking data:', formattedData)
       setTrackingData(formattedData)
       setLastUpdate(new Date())
     } catch (error) {
