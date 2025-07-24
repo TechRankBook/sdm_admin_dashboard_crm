@@ -84,6 +84,37 @@ export const useAnalytics = (dateRange: DateRange) => {
 
   useEffect(() => {
     fetchAnalytics();
+
+    // Set up real-time subscriptions for analytics data
+    const bookingsChannel = supabase
+      .channel('analytics-bookings-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'bookings' },
+        () => fetchAnalytics()
+      )
+      .subscribe()
+
+    const driversChannel = supabase
+      .channel('analytics-drivers-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'drivers' },
+        () => fetchAnalytics()
+      )
+      .subscribe()
+
+    const customersChannel = supabase
+      .channel('analytics-customers-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'customers' },
+        () => fetchAnalytics()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(bookingsChannel)
+      supabase.removeChannel(driversChannel)
+      supabase.removeChannel(customersChannel)
+    }
   }, [dateRange.start, dateRange.end]);
 
   return {
