@@ -212,6 +212,26 @@ export const LiveMapView: React.FC = () => {
       ? trackingData 
       : trackingData.filter(data => data.driver.id === selectedDriver)
 
+    // If no valid coordinates, show placeholder markers in Delhi area
+    if (trackingData.length > 0 && !filteredData.some(data => 
+      data.driver.current_latitude || data.booking?.pickup_latitude)) {
+      
+      console.warn('No valid coordinates found. Showing demo markers.')
+      
+      // Add demo markers for testing
+      const demoDriverMarker = new window.google.maps.Marker({
+        position: { lat: 28.6139, lng: 77.2090 },
+        map: mapInstanceRef.current,
+        icon: getMarkerIcon('driver', 'active'),
+        title: 'Demo Driver - No coordinates available',
+        zIndex: 1000
+      })
+      
+      markersRef.current.set('demo-driver', demoDriverMarker)
+      bounds.extend(demoDriverMarker.getPosition()!)
+      hasValidLocations = true
+    }
+
     filteredData.forEach(data => {
       const { driver, booking } = data
 
@@ -339,6 +359,10 @@ export const LiveMapView: React.FC = () => {
     // Fit bounds to show all markers
     if (hasValidLocations && !bounds.isEmpty()) {
       mapInstanceRef.current.fitBounds(bounds, { padding: 50 })
+    } else if (trackingData.length === 0) {
+      // Center on Delhi if no data
+      mapInstanceRef.current.setCenter({ lat: 28.6139, lng: 77.2090 })
+      mapInstanceRef.current.setZoom(11)
     }
   }, [trackingData, selectedDriver])
 
