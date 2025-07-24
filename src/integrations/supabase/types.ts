@@ -414,6 +414,7 @@ export type Database = {
           driver_id: string | null
           dropoff_address: string | null
           dropoff_latitude: number | null
+          dropoff_location_id: string | null
           dropoff_longitude: number | null
           end_time: string | null
           extra_hours_used: number | null
@@ -431,6 +432,7 @@ export type Database = {
             | null
           pickup_address: string | null
           pickup_latitude: number | null
+          pickup_location_id: string | null
           pickup_longitude: number | null
           rental_package_id: string | null
           ride_type:
@@ -456,6 +458,7 @@ export type Database = {
           driver_id?: string | null
           dropoff_address?: string | null
           dropoff_latitude?: number | null
+          dropoff_location_id?: string | null
           dropoff_longitude?: number | null
           end_time?: string | null
           extra_hours_used?: number | null
@@ -473,6 +476,7 @@ export type Database = {
             | null
           pickup_address?: string | null
           pickup_latitude?: number | null
+          pickup_location_id?: string | null
           pickup_longitude?: number | null
           rental_package_id?: string | null
           ride_type?:
@@ -498,6 +502,7 @@ export type Database = {
           driver_id?: string | null
           dropoff_address?: string | null
           dropoff_latitude?: number | null
+          dropoff_location_id?: string | null
           dropoff_longitude?: number | null
           end_time?: string | null
           extra_hours_used?: number | null
@@ -515,6 +520,7 @@ export type Database = {
             | null
           pickup_address?: string | null
           pickup_latitude?: number | null
+          pickup_location_id?: string | null
           pickup_longitude?: number | null
           rental_package_id?: string | null
           ride_type?:
@@ -539,6 +545,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_dropoff_location_id_fkey"
+            columns: ["dropoff_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_pickup_location_id_fkey"
+            columns: ["pickup_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
             referencedColumns: ["id"]
           },
           {
@@ -1139,6 +1159,30 @@ export type Database = {
           created_at?: string | null
           id?: number
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      locations: {
+        Row: {
+          created_at: string | null
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
         }
         Relationships: []
       }
