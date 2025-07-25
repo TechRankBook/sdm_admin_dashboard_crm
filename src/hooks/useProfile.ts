@@ -19,90 +19,74 @@ export const useProfile = () => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  // Fetch current user profile based on role
+  // Fetch current user profile from unified users table
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['user-profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null
 
-      // Try to get profile from different tables based on user role
+      // Get profile data from unified users table with role-specific joins
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('role')
+        .select(`
+          *,
+          admins(
+            can_approve_bookings,
+            assigned_region
+          ),
+          customers(
+            loyalty_points,
+            dob,
+            preferred_payment_method,
+            referral_code
+          ),
+          drivers(
+            license_number,
+            status,
+            rating,
+            total_rides,
+            current_latitude,
+            current_longitude,
+            kyc_status,
+            joined_on
+          )
+        `)
         .eq('id', user.id)
         .single()
 
       if (userError) throw userError
 
-      const role = userData?.role
-
-      let profile: UserProfile | null = null
-
-      // Get profile data based on role
-      if (role === 'admin') {
-        const { data, error } = await supabase
-          .from('admins')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        
-        if (!error && data) {
-          profile = {
-            id: data.id,
-            full_name: data.full_name,
-            email: data.email,
-            profile_picture_url: data.profile_picture_url,
-            phone_no: data.phone_no,
-            created_at: data.created_at,
-            updated_at: data.updated_at
-          }
-        }
-      } else if (role === 'customer') {
-        const { data, error } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        
-        if (!error && data) {
-          profile = {
-            id: data.id,
-            full_name: data.full_name,
-            email: data.email || user.email || '',
-            profile_picture_url: data.profile_picture_url,
-            phone_no: data.phone_no,
-            created_at: data.created_at,
-            updated_at: data.updated_at
-          }
-        }
-      } else if (role === 'driver') {
-        const { data, error } = await supabase
-          .from('drivers')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        
-        if (!error && data) {
-          profile = {
-            id: data.id,
-            full_name: data.full_name,
-            email: data.email || user.email || '',
-            profile_picture_url: data.profile_picture_url,
-            phone_no: data.phone_no,
-            created_at: data.created_at,
-            updated_at: data.updated_at
-          }
-        }
+      // Transform data to include role-specific information
+      const profile: UserProfile & { [key: string]: any } = {
+        id: (userData as any).id,
+        full_name: (userData as any).full_name || user.user_metadata?.full_name || 'User',
+        email: (userData as any).email || user.email || '',
+        profile_picture_url: (userData as any).profile_picture_url || user.user_metadata?.avatar_url,
+        phone_no: (userData as any).phone_no,
+        created_at: (userData as any).created_at,
+        updated_at: (userData as any).updated_at,
+        role: (userData as any).role,
+        status: (userData as any).status
       }
 
-      // Fallback to auth user data if no profile found
-      if (!profile) {
-        profile = {
-          id: user.id,
-          full_name: user.user_metadata?.full_name || 'User',
-          email: user.email || '',
-          profile_picture_url: user.user_metadata?.avatar_url
-        }
+      // Add role-specific data
+      if ((userData as any).role === 'admin' && (userData as any).admins?.[0]) {
+        profile.can_approve_bookings = (userData as any).admins[0].can_approve_bookings
+        profile.assigned_region = (userData as any).admins[0].assigned_region
+      } else if ((userData as any).role === 'customer' && (userData as any).customers?.[0]) {
+        profile.loyalty_points = (userData as any).customers[0].loyalty_points
+        profile.dob = (userData as any).customers[0].dob
+        profile.preferred_payment_method = (userData as any).customers[0].preferred_payment_method
+        profile.referral_code = (userData as any).customers[0].referral_code
+      } else if ((userData as any).role === 'driver' && (userData as any).drivers?.[0]) {
+        profile.license_number = (userData as any).drivers[0].license_number
+        profile.driver_status = (userData as any).drivers[0].status
+        profile.rating = (userData as any).drivers[0].rating
+        profile.total_rides = (userData as any).drivers[0].total_rides
+        profile.current_latitude = (userData as any).drivers[0].current_latitude
+        profile.current_longitude = (userData as any).drivers[0].current_longitude
+        profile.kyc_status = (userData as any).drivers[0].kyc_status
+        profile.joined_on = (userData as any).drivers[0].joined_on
       }
 
       return profile
@@ -110,64 +94,90 @@ export const useProfile = () => {
     enabled: !!user?.id
   })
 
-  // Update profile mutation
+  // Update profile mutation - now uses unified users table
   const updateProfileMutation = useMutation({
-    mutationFn: async (updates: Partial<UserProfile>) => {
+    mutationFn: async (updates: Partial<UserProfile & { [key: string]: any }>) => {
       if (!user?.id || !profile) throw new Error('No user or profile found')
 
-      // Get user role first
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-      if (userError) throw userError
-
-      const role = userData?.role
-      let result
-
-      // Update based on role
-      if (role === 'admin') {
-        result = await supabase
-          .from('admins')
-          .update({
-            full_name: updates.full_name,
-            profile_picture_url: updates.profile_picture_url,
-            phone_no: updates.phone_no,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id)
-          .select()
-          .single()
-      } else if (role === 'customer') {
-        result = await supabase
-          .from('customers')
-          .update({
-            full_name: updates.full_name,
-            profile_picture_url: updates.profile_picture_url,
-            phone_no: updates.phone_no,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id)
-          .select()
-          .single()
-      } else if (role === 'driver') {
-        result = await supabase
-          .from('drivers')
-          .update({
-            full_name: updates.full_name,
-            profile_picture_url: updates.profile_picture_url,
-            phone_no: updates.phone_no,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id)
-          .select()
-          .single()
+      // Separate common fields from role-specific fields
+      const commonFields = {
+        full_name: updates.full_name,
+        email: updates.email,
+        phone_no: updates.phone_no,
+        profile_picture_url: updates.profile_picture_url,
+        updated_at: new Date().toISOString()
       }
 
-      if (result?.error) throw result.error
-      return result?.data
+      const roleSpecificFields = { ...updates }
+      delete roleSpecificFields.full_name
+      delete roleSpecificFields.email
+      delete roleSpecificFields.phone_no
+      delete roleSpecificFields.profile_picture_url
+      delete roleSpecificFields.id
+      delete roleSpecificFields.created_at
+      delete roleSpecificFields.updated_at
+      delete roleSpecificFields.role
+      delete roleSpecificFields.status
+
+      // Update common fields in users table
+      const { error: usersError } = await supabase
+        .from('users')
+        .update(commonFields)
+        .eq('id', user.id)
+
+      if (usersError) throw usersError
+
+      // Update role-specific fields if any
+      if (Object.keys(roleSpecificFields).length > 0) {
+        const role = profile.role
+        let roleResult
+
+        if (role === 'admin') {
+          const adminFields = {
+            can_approve_bookings: roleSpecificFields.can_approve_bookings,
+            assigned_region: roleSpecificFields.assigned_region,
+            updated_at: new Date().toISOString()
+          }
+          
+          roleResult = await supabase
+            .from('admins')
+            .update(adminFields)
+            .eq('id', user.id)
+        } else if (role === 'customer') {
+          const customerFields = {
+            loyalty_points: roleSpecificFields.loyalty_points,
+            dob: roleSpecificFields.dob,
+            preferred_payment_method: roleSpecificFields.preferred_payment_method,
+            referral_code: roleSpecificFields.referral_code,
+            updated_at: new Date().toISOString()
+          }
+          
+          roleResult = await supabase
+            .from('customers')
+            .update(customerFields)
+            .eq('id', user.id)
+        } else if (role === 'driver') {
+          const driverFields = {
+            license_number: roleSpecificFields.license_number,
+            status: roleSpecificFields.driver_status,
+            rating: roleSpecificFields.rating,
+            total_rides: roleSpecificFields.total_rides,
+            current_latitude: roleSpecificFields.current_latitude,
+            current_longitude: roleSpecificFields.current_longitude,
+            kyc_status: roleSpecificFields.kyc_status,
+            updated_at: new Date().toISOString()
+          }
+          
+          roleResult = await supabase
+            .from('drivers')
+            .update(driverFields)
+            .eq('id', user.id)
+        }
+
+        if (roleResult?.error) throw roleResult.error
+      }
+
+      return { success: true }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] })
@@ -191,6 +201,10 @@ export const useProfile = () => {
 
     const channel = supabase
       .channel('profile-changes')
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${user.id}` },
+        () => queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      )
       .on('postgres_changes', 
         { event: 'UPDATE', schema: 'public', table: 'admins', filter: `id=eq.${user.id}` },
         () => queryClient.invalidateQueries({ queryKey: ['user-profile'] })

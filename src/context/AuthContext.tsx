@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { AuthContextType } from '@/types/auth'
 import { useAuthState } from '@/hooks/useAuthState'
+import { useUserSync } from '@/hooks/useUserSync'
 import { performSignIn, performSignOut } from '@/utils/authOperations'
 import { authLog } from '@/utils/authLogger'
 
@@ -18,6 +19,9 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { authState, handleSessionUpdate, clearLoading, clearAuth } = useAuthState()
+  
+  // Sync auth.users with public.users table
+  useUserSync()
 
   // Initialize auth with comprehensive timeout protection
   useEffect(() => {

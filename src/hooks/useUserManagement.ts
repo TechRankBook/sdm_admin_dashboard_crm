@@ -13,37 +13,78 @@ export const useUserManagement = () => {
   const fetchUsers = async (filters?: UserFilter) => {
     setLoading(true)
     try {
-      let query = supabase
-        .from('user_management_view')
-        .select('*')
+      // Query from unified users table with role-specific data
+      let baseQuery = supabase
+        .from('users')
+        .select(`
+          *,
+          drivers(
+            total_rides,
+            rating,
+            status,
+            license_number
+          ),
+          customers(
+            loyalty_points,
+            dob,
+            preferred_payment_method
+          )
+        `)
 
       if (filters?.role && filters.role !== 'all') {
-        query = query.eq('role', filters.role)
+        baseQuery = baseQuery.eq('role', filters.role)
       }
 
       if (filters?.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status)
+        baseQuery = baseQuery.eq('status', filters.status)
       }
 
       if (filters?.search) {
-        query = query.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone_no.ilike.%${filters.search}%`)
+        baseQuery = baseQuery.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone_no.ilike.%${filters.search}%`)
       }
 
       if (filters?.dateRange) {
-        query = query
+        baseQuery = baseQuery
           .gte('created_at', filters.dateRange.from.toISOString())
           .lte('created_at', filters.dateRange.to.toISOString())
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false })
+      const { data, error } = await baseQuery.order('created_at', { ascending: false })
 
       if (error) {
         console.error('Supabase error:', error)
         throw error
       }
       
-      console.log('Fetched users:', data?.length || 0, 'users')
-      setUsers(data || [])
+      // Transform data to match UserManagementRecord interface
+      const transformedUsers = (data as any)?.map((user: any) => ({
+        id: user.id,
+        role: user.role,
+        status: user.status,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        blocked_at: user.blocked_at,
+        blocked_by: user.blocked_by,
+        block_reason: user.block_reason,
+        deleted_at: user.deleted_at,
+        last_login_at: user.last_login_at,
+        full_name: user.full_name,
+        phone_no: user.phone_no,
+        email: user.email,
+        profile_picture_url: user.profile_picture_url,
+        // Driver specific fields
+        total_rides: user.drivers?.[0]?.total_rides,
+        driver_rating: user.drivers?.[0]?.rating,
+        driver_status: user.drivers?.[0]?.status,
+        // Customer specific fields
+        loyalty_points: user.customers?.[0]?.loyalty_points,
+        // Additional fields for compatibility
+        gst_number: null,
+        assigned_region: null
+      })) || []
+      
+      console.log('Fetched users:', transformedUsers.length, 'users')
+      setUsers(transformedUsers)
     } catch (error) {
       console.error('Error fetching users:', error)
       toast.error('Failed to fetch users')
@@ -57,7 +98,7 @@ export const useUserManagement = () => {
     try {
       console.log('Fetching user stats...')
       const { data: users, error } = await supabase
-        .from('user_management_view')
+        .from('users')
         .select('role, status, created_at')
 
       if (error) {

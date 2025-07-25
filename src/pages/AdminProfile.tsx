@@ -41,19 +41,39 @@ export const AdminProfile: React.FC = () => {
 
   const fetchAdminData = async () => {
     try {
+      // Fetch from unified users table with admin-specific data
       const { data, error } = await supabase
-        .from('admins')
-        .select('*')
+        .from('users')
+        .select(`
+          *,
+          admins(
+            can_approve_bookings,
+            assigned_region
+          )
+        `)
         .eq('id', user?.id)
         .single()
 
       if (error) throw error
       
-      setAdminData(data)
+      // Transform data to match existing interface
+      const transformedData = {
+        id: (data as any).id,
+        full_name: (data as any).full_name,
+        email: (data as any).email,
+        phone_no: (data as any).phone_no,
+        profile_picture_url: (data as any).profile_picture_url,
+        created_at: (data as any).created_at,
+        updated_at: (data as any).updated_at,
+        can_approve_bookings: (data as any).admins?.[0]?.can_approve_bookings || true,
+        assigned_region: (data as any).admins?.[0]?.assigned_region || ''
+      }
+      
+      setAdminData(transformedData)
       setProfileForm({
-        full_name: data.full_name,
-        phone_no: data.phone_no,
-        assigned_region: data.assigned_region || '',
+        full_name: transformedData.full_name || '',
+        phone_no: transformedData.phone_no || '',
+        assigned_region: transformedData.assigned_region || '',
       })
     } catch (error) {
       console.error('Error fetching admin data:', error)
@@ -90,15 +110,29 @@ export const AdminProfile: React.FC = () => {
         profilePictureUrl = publicUrl
       }
 
-      const { error } = await supabase
-        .from('admins')
+      // Update common fields in users table
+      const { error: usersError } = await supabase
+        .from('users')
         .update({
-          ...profileForm,
+          full_name: profileForm.full_name,
+          phone_no: profileForm.phone_no,
           profile_picture_url: profilePictureUrl,
+          updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
 
-      if (error) throw error
+      if (usersError) throw usersError
+
+      // Update admin-specific fields in admins table
+      const { error: adminError } = await supabase
+        .from('admins')
+        .update({
+          assigned_region: profileForm.assigned_region,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+
+      if (adminError) throw adminError
 
       toast.success('Profile updated successfully')
       setProfilePicture(null)
