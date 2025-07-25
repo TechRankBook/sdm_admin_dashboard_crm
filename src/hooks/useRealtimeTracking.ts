@@ -39,17 +39,20 @@ export const useRealtimeTracking = () => {
     try {
       setError(null)
       
-      // Fetch drivers with active bookings
+      // Fetch drivers with user data joined
       const { data: driversData, error: driversError } = await supabase
         .from('drivers')
         .select(`
           id,
-          full_name,
           status,
           current_latitude,
           current_longitude,
-          phone_no,
-          rating
+          rating,
+          users!inner (
+            full_name,
+            phone_no,
+            profile_picture_url
+          )
         `)
         .eq('status', 'active')
 
@@ -83,15 +86,16 @@ export const useRealtimeTracking = () => {
       // Combine driver and booking data
       const combinedData: TrackingData[] = driversData.map(driver => {
         const driverBooking = bookingsData.find(booking => booking.driver_id === driver.id)
+        const userData = (driver.users as any)
         
         return {
           driver: {
             id: driver.id,
-            full_name: driver.full_name,
+            full_name: userData?.full_name || 'Unknown Driver',
             status: driver.status,
             current_latitude: driver.current_latitude,
             current_longitude: driver.current_longitude,
-            phone_no: driver.phone_no,
+            phone_no: userData?.phone_no || '',
             rating: driver.rating
           },
           booking: driverBooking ? {
@@ -162,9 +166,27 @@ export const useRealtimeTracking = () => {
       )
       .subscribe()
 
+    // Subscribe to user updates (for driver profile changes)
+    const usersChannel = supabase
+      .channel('users-tracking')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'users'
+        },
+        (payload) => {
+          console.log('User update:', payload)
+          fetchTrackingData()
+        }
+      )
+      .subscribe()
+
     return () => {
       supabase.removeChannel(driversChannel)
       supabase.removeChannel(bookingsChannel)
+      supabase.removeChannel(usersChannel)
     }
   }, [fetchTrackingData])
 

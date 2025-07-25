@@ -109,17 +109,20 @@ export const LiveMapView: React.FC = () => {
     try {
       console.log('Fetching tracking data...')
       
-      // Fetch all active drivers first
+      // Fetch all active drivers with user data joined
       const { data: allDrivers, error: driversError } = await supabase
         .from('drivers')
         .select(`
           id,
-          full_name,
           status,
           current_latitude,
           current_longitude,
-          phone_no,
-          rating
+          rating,
+          users!inner (
+            full_name,
+            phone_no,
+            profile_picture_url
+          )
         `)
         .eq('status', 'active')
 
@@ -155,15 +158,16 @@ export const LiveMapView: React.FC = () => {
       // Combine the data - include ALL active drivers, with their bookings if they have them
       const formattedData: TrackingData[] = (allDrivers || []).map(driver => {
         const driverBooking = activeBookings?.find(booking => booking.driver_id === driver.id)
+        const userData = (driver.users as any)
         
         return {
           driver: {
             id: driver.id,
-            full_name: driver.full_name,
+            full_name: userData?.full_name || 'Unknown Driver',
             status: driver.status,
             current_latitude: driver.current_latitude,
             current_longitude: driver.current_longitude,
-            phone_no: driver.phone_no,
+            phone_no: userData?.phone_no || '',
             rating: driver.rating
           },
           booking: driverBooking ? {
