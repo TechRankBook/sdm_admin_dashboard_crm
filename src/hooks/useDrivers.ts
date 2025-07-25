@@ -12,11 +12,33 @@ export const useDrivers = () => {
     try {
       const { data, error } = await supabase
         .from('drivers')
-        .select('*')
+        .select(`
+          *,
+          users!inner (
+            full_name,
+            email,
+            phone_no,
+            profile_picture_url
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setDrivers(data || [])
+      
+      // Transform the data to flatten user fields
+      const transformedData = (data || []).map(driver => {
+        const userData = (driver.users as any)
+        return {
+          ...driver,
+          full_name: userData?.full_name || '',
+          email: userData?.email || '',
+          phone_no: userData?.phone_no || '',
+          profile_picture_url: userData?.profile_picture_url || '',
+          users: undefined // Remove the nested object
+        }
+      })
+      
+      setDrivers(transformedData)
     } catch (error) {
       console.error('Error fetching drivers:', error)
       toast.error('Failed to fetch drivers')
@@ -27,23 +49,46 @@ export const useDrivers = () => {
 
   const updateDriver = async (driverId: string, updates: Partial<Driver>) => {
     try {
-      const { data, error } = await supabase
-        .from('drivers')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', driverId)
-        .select()
-        .single()
+      // Separate driver-specific fields from user fields
+      const { full_name, email, phone_no, profile_picture_url, ...driverUpdates } = updates
+      
+      // Update user fields if they exist
+      if (full_name !== undefined || email !== undefined || phone_no !== undefined || profile_picture_url !== undefined) {
+        const userUpdates: any = {}
+        if (full_name !== undefined) userUpdates.full_name = full_name
+        if (email !== undefined) userUpdates.email = email
+        if (phone_no !== undefined) userUpdates.phone_no = phone_no
+        if (profile_picture_url !== undefined) userUpdates.profile_picture_url = profile_picture_url
+        
+        const { error: userError } = await supabase
+          .from('users')
+          .update({
+            ...userUpdates,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', driverId)
+        
+        if (userError) throw userError
+      }
+      
+      // Update driver-specific fields if they exist
+      if (Object.keys(driverUpdates).length > 0) {
+        const { error: driverError } = await supabase
+          .from('drivers')
+          .update({
+            ...driverUpdates,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', driverId)
+        
+        if (driverError) throw driverError
+      }
 
-      if (error) throw error
-
-      setDrivers(prev => prev.map(driver => 
-        driver.id === driverId ? { ...driver, ...data } : driver
-      ))
+      // Refetch the updated driver data
+      await fetchDrivers()
+      
       toast.success('Driver updated successfully')
-      return data
+      return true
     } catch (error) {
       console.error('Error updating driver:', error)
       toast.error('Failed to update driver')
@@ -95,17 +140,26 @@ export const useDrivers = () => {
   useEffect(() => {
     fetchDrivers()
 
-    // Set up real-time subscription
-    const channel = supabase
+    // Set up real-time subscriptions for both drivers and users tables
+    const driversChannel = supabase
       .channel('drivers-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'drivers' },
         () => fetchDrivers()
       )
       .subscribe()
+      
+    const usersChannel = supabase
+      .channel('users-drivers-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'users' },
+        () => fetchDrivers()
+      )
+      .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(driversChannel)
+      supabase.removeChannel(usersChannel)
     }
   }, [])
 

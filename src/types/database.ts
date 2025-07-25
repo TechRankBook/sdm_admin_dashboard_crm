@@ -12,11 +12,7 @@ export interface Customer {
 
 export interface Driver {
   id: string
-  full_name: string
-  phone_no: string
-  email?: string
   license_number: string
-  profile_picture_url?: string
   status: 'active' | 'inactive' | 'on_break' | 'suspended' | 'on_ride' | 'offline'
   rating: number
   total_rides?: number
@@ -29,6 +25,11 @@ export interface Driver {
   rejection_reason?: string
   created_at: string
   updated_at: string
+  // Fields populated from joined users table
+  full_name: string
+  phone_no: string
+  email?: string
+  profile_picture_url?: string
 }
 
 export interface Vehicle {

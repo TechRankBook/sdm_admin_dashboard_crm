@@ -143,16 +143,42 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
 
       console.log('Update payload:', updatePayload)
 
-      // Update driver in database
-      const { error: updateError } = await supabase
-        .from('drivers')
-        .update(updatePayload)
-        .eq('id', driver.id)
+      // Separate user fields from driver fields
+      const { full_name, email, phone_no, profile_picture_url: newProfileUrl, ...driverOnlyFields } = updatePayload
+      
+      // Update user fields in users table
+      const userUpdates: any = {}
+      if (full_name !== undefined) userUpdates.full_name = full_name
+      if (email !== undefined) userUpdates.email = email  
+      if (phone_no !== undefined) userUpdates.phone_no = phone_no
+      if (newProfileUrl !== undefined) userUpdates.profile_picture_url = newProfileUrl
+      
+      if (Object.keys(userUpdates).length > 0) {
+        userUpdates.updated_at = new Date().toISOString()
+        const { error: userError } = await supabase
+          .from('users')
+          .update(userUpdates)
+          .eq('id', driver.id)
 
-      if (updateError) {
-        console.error('Driver update error:', updateError)
-        toast.error(`Failed to update driver: ${updateError.message}`)
-        return
+        if (userError) {
+          console.error('User update error:', userError)
+          toast.error(`Failed to update user data: ${userError.message}`)
+          return
+        }
+      }
+
+      // Update driver-specific fields in drivers table
+      if (Object.keys(driverOnlyFields).length > 0) {
+        const { error: driverError } = await supabase
+          .from('drivers')
+          .update(driverOnlyFields)
+          .eq('id', driver.id)
+
+        if (driverError) {
+          console.error('Driver update error:', driverError)
+          toast.error(`Failed to update driver data: ${driverError.message}`)
+          return
+        }
       }
 
       toast.success('Driver updated successfully!')
