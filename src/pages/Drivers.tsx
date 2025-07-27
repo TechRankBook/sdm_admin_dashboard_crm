@@ -12,6 +12,8 @@ import { AddDriverModal } from '@/components/drivers/AddDriverModal'
 import { EditDriverModal } from '@/components/drivers/EditDriverModal'
 import { DriverProfileModal } from '@/components/drivers/DriverProfileModal'
 import { DeleteDriverModal } from '@/components/drivers/DeleteDriverModal'
+import { DriversListView } from '@/components/drivers/DriversListView'
+import { ViewToggle } from '@/components/ui/view-toggle'
 import { Driver } from '@/types/database'
 
 export const Drivers: React.FC = () => {
@@ -19,6 +21,7 @@ export const Drivers: React.FC = () => {
   const { drivers, loading } = useDrivers()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [viewType, setViewType] = useState<'grid' | 'list'>('grid')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -104,7 +107,10 @@ export const Drivers: React.FC = () => {
       {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Search & Filter</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Search & Filter</CardTitle>
+            <ViewToggle view={viewType} onViewChange={setViewType} />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
@@ -136,68 +142,80 @@ export const Drivers: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Drivers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredDrivers.map((driver) => (
-          <Card key={driver.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src={driver.profile_picture_url || ''} />
-                    <AvatarFallback>
-                      {driver.full_name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{driver.full_name}</h3>
-                    <p className="text-sm text-gray-500">{driver.phone_no}</p>
+      {/* Drivers View */}
+      {viewType === 'grid' ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredDrivers.map((driver) => (
+              <Card key={driver.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={driver.profile_picture_url || ''} />
+                        <AvatarFallback>
+                          {driver.full_name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{driver.full_name}</h3>
+                        <p className="text-sm text-gray-500">{driver.phone_no}</p>
+                      </div>
+                    </div>
+                    <Badge className={getStatusColor(driver.status || 'active')}>
+                      {(driver.status || 'active').replace('_', ' ').toUpperCase()}
+                    </Badge>
                   </div>
-                </div>
-                <Badge className={getStatusColor(driver.status || 'active')}>
-                  {(driver.status || 'active').replace('_', ' ').toUpperCase()}
-                </Badge>
-              </div>
-              
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center space-x-1">
-                  {renderStars(Math.floor(driver.rating || 0))}
-                  <span className="text-sm text-gray-500 ml-2">({(driver.rating || 0).toFixed(1)})</span>
-                </div>
-                <p className="text-sm text-gray-600">
-                  Total Rides: {driver.total_rides || 0}
-                </p>
-                {driver.license_number && (
-                  <p className="text-sm text-gray-600">
-                    License: {driver.license_number}
-                  </p>
-                )}
-              </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center space-x-1">
+                      {renderStars(Math.floor(driver.rating || 0))}
+                      <span className="text-sm text-gray-500 ml-2">({(driver.rating || 0).toFixed(1)})</span>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Total Rides: {driver.total_rides || 0}
+                    </p>
+                    {driver.license_number && (
+                      <p className="text-sm text-gray-600">
+                        License: {driver.license_number}
+                      </p>
+                    )}
+                  </div>
 
-              <div className="flex space-x-2">
-                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewDriver(driver)}>
-                  <Eye className="h-4 w-4 mr-1" />
-                  View
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDriver(driver)}>
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => handleDeleteDriver(driver)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewDriver(driver)}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDriver(driver)}>
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDeleteDriver(driver)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-      {filteredDrivers.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-gray-500">No drivers found matching your criteria</p>
-          </CardContent>
-        </Card>
+          {filteredDrivers.length === 0 && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-gray-500">No drivers found matching your criteria</p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : (
+        <DriversListView
+          drivers={filteredDrivers}
+          getStatusColor={getStatusColor}
+          onView={handleViewDriver}
+          onEdit={handleEditDriver}
+          onDelete={handleDeleteDriver}
+        />
       )}
 
       {/* Modals */}

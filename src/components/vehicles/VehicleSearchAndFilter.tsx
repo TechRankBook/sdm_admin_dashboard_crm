@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search } from 'lucide-react'
+import { ViewToggle } from '@/components/ui/view-toggle'
 
 interface VehicleSearchAndFilterProps {
   searchTerm: string
@@ -11,6 +12,8 @@ interface VehicleSearchAndFilterProps {
   statusFilter: string
   onStatusFilterChange: (status: string) => void
   getStatusDisplayName: (status: string) => string
+  viewType: 'grid' | 'list'
+  onViewTypeChange: (view: 'grid' | 'list') => void
 }
 
 export const VehicleSearchAndFilter: React.FC<VehicleSearchAndFilterProps> = ({
@@ -18,12 +21,17 @@ export const VehicleSearchAndFilter: React.FC<VehicleSearchAndFilterProps> = ({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
-  getStatusDisplayName
+  getStatusDisplayName,
+  viewType,
+  onViewTypeChange
 }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Search & Filter</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Search & Filter</CardTitle>
+          <ViewToggle view={viewType} onViewChange={onViewTypeChange} />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row gap-4">

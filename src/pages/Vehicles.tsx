@@ -10,6 +10,7 @@ import { ServiceLogsModal } from '@/components/vehicles/ServiceLogsModal'
 import { VehicleHeader } from '@/components/vehicles/VehicleHeader'
 import { VehicleSearchAndFilter } from '@/components/vehicles/VehicleSearchAndFilter'
 import { VehicleGrid } from '@/components/vehicles/VehicleGrid'
+import { VehicleListView } from '@/components/vehicles/VehicleListView'
 import { VehicleLoadingState } from '@/components/vehicles/VehicleLoadingState'
 import { useVehicleFilters } from '@/hooks/useVehicleFilters'
 import { useVehicleUtils } from '@/hooks/useVehicleUtils'
@@ -19,6 +20,7 @@ export const Vehicles: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [viewType, setViewType] = useState<'grid' | 'list'>('grid')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -81,17 +83,31 @@ export const Vehicles: React.FC = () => {
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         getStatusDisplayName={getStatusDisplayName}
+        viewType={viewType}
+        onViewTypeChange={setViewType}
       />
 
-      <VehicleGrid
-        vehicles={filteredVehicles}
-        getStatusColor={getStatusColor}
-        getTypeDisplayName={getTypeDisplayName}
-        getStatusDisplayName={getStatusDisplayName}
-        onEdit={handleEditVehicle}
-        onDelete={handleDeleteVehicle}
-        onViewServiceLogs={handleViewServiceLogs}
-      />
+      {viewType === 'grid' ? (
+        <VehicleGrid
+          vehicles={filteredVehicles}
+          getStatusColor={getStatusColor}
+          getTypeDisplayName={getTypeDisplayName}
+          getStatusDisplayName={getStatusDisplayName}
+          onEdit={handleEditVehicle}
+          onDelete={handleDeleteVehicle}
+          onViewServiceLogs={handleViewServiceLogs}
+        />
+      ) : (
+        <VehicleListView
+          vehicles={filteredVehicles}
+          getStatusColor={getStatusColor}
+          getTypeDisplayName={getTypeDisplayName}
+          getStatusDisplayName={getStatusDisplayName}
+          onEdit={handleEditVehicle}
+          onDelete={handleDeleteVehicle}
+          onViewServiceLogs={handleViewServiceLogs}
+        />
+      )}
 
       {/* Modals */}
       <AddVehicleModal 
