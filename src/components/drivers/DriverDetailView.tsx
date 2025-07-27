@@ -37,15 +37,33 @@ export const DriverDetailView: React.FC = () => {
     try {
       setLoading(true)
 
-      // Fetch driver data
+      // Fetch driver data with user info
       const { data: driverData, error: driverError } = await supabase
         .from('drivers')
-        .select('*')
+        .select(`
+          *,
+          users!inner(
+            full_name,
+            email,
+            phone_no,
+            profile_picture_url
+          )
+        `)
         .eq('id', id)
         .single()
 
       if (driverError) throw driverError
-      setDriver(driverData)
+      
+      // Transform data to match the expected Driver interface
+      const transformedDriver = {
+        ...driverData,
+        full_name: driverData.users.full_name,
+        email: driverData.users.email,
+        phone_no: driverData.users.phone_no,
+        profile_picture_url: driverData.users.profile_picture_url
+      }
+      
+      setDriver(transformedDriver)
 
       // Fetch assigned vehicle
       const { data: vehicleData, error: vehicleError } = await supabase
@@ -145,7 +163,7 @@ export const DriverDetailView: React.FC = () => {
               <Avatar className="w-12 h-12">
                 <AvatarImage src={driver.profile_picture_url || ''} />
                 <AvatarFallback>
-                  {driver.full_name.charAt(0).toUpperCase()}
+                  {driver.full_name?.charAt(0).toUpperCase() || 'D'}
                 </AvatarFallback>
               </Avatar>
               <div>
