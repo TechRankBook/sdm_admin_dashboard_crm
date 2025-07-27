@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Search, User, Users } from 'lucide-react'
 import { useNotifications, NotificationTemplate } from '@/hooks/useNotifications'
+import { supabase } from '@/lib/supabase'
 
 interface SendNotificationModalProps {
   isOpen: boolean
@@ -46,7 +47,25 @@ export const SendNotificationModal: React.FC<SendNotificationModalProps> = ({
 
   const { sendNotification, isSendingNotification } = useNotifications()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setFormData({
+      channel: 'in_app',
+      title: '',
+      message: '',
+      template_id: '',
+      user_id: '',
+      user_search: '',
+      bulk_criteria: 'all_users'
+    })
+    setSearchResults([])
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (sendType === 'single' && formData.user_id) {
@@ -57,28 +76,96 @@ export const SendNotificationModal: React.FC<SendNotificationModalProps> = ({
         message: formData.message,
         template_id: formData.template_id || undefined
       })
+    } else if (sendType === 'bulk') {
+      await handleBulkSend()
     }
     
-    onClose()
+    handleClose()
+  }
+
+  const handleBulkSend = async () => {
+    try {
+      // Get target users based on criteria
+      let userQuery = supabase.from('users').select('id')
+      
+      switch (formData.bulk_criteria) {
+        case 'customers':
+          userQuery = userQuery.eq('role', 'customer')
+          break
+        case 'drivers':
+          userQuery = userQuery.eq('role', 'driver')
+          break
+        case 'recent_bookings':
+          // Get users who made bookings in the last 30 days
+          const thirtyDaysAgo = new Date()
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+          
+          const { data: recentBookings } = await supabase
+            .from('bookings')
+            .select('user_id')
+            .gte('created_at', thirtyDaysAgo.toISOString())
+          
+          const userIds = [...new Set(recentBookings?.map(b => b.user_id))]
+          userQuery = userQuery.in('id', userIds)
+          break
+        default:
+          // all_users - no additional filter
+          break
+      }
+      
+      userQuery = userQuery.eq('status', 'active')
+      
+      const { data: targetUsers, error } = await userQuery
+      
+      if (error) throw error
+      
+      // Send notification to each user
+      for (const user of targetUsers || []) {
+        sendNotification({
+          user_id: user.id,
+          channel: formData.channel,
+          title: formData.title,
+          message: formData.message,
+          template_id: formData.template_id || undefined
+        })
+      }
+    } catch (error) {
+      console.error('Error sending bulk notifications:', error)
+    }
   }
 
   const searchUsers = async (query: string) => {
-    if (!query.trim()) return
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
     
     setSearching(true)
-    // Simulate user search
-    setTimeout(() => {
-      const mockUsers = [
-        { id: '1', name: 'John Doe', email: 'john@example.com', role: 'customer' },
-        { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'driver' },
-        { id: '3', name: 'Mike Johnson', email: 'mike@example.com', role: 'customer' }
-      ].filter(user => 
-        user.name.toLowerCase().includes(query.toLowerCase()) ||
-        user.email.toLowerCase().includes(query.toLowerCase())
-      )
-      setSearchResults(mockUsers as any)
+    
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, full_name, email, phone_no, role')
+        .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
+        .eq('status', 'active')
+        .limit(10)
+      
+      if (error) throw error
+      
+      const mappedUsers = data?.map(user => ({
+        id: user.id,
+        name: user.full_name || user.email,
+        email: user.email,
+        role: user.role
+      })) || []
+      
+      setSearchResults(mappedUsers as any)
+    } catch (error) {
+      console.error('Error searching users:', error)
+      setSearchResults([])
+    } finally {
       setSearching(false)
-    }, 500)
+    }
   }
 
   const selectedTemplate = templates.find(t => t.id === formData.template_id)
@@ -97,7 +184,7 @@ export const SendNotificationModal: React.FC<SendNotificationModalProps> = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Send Notification</DialogTitle>
@@ -270,14 +357,19 @@ export const SendNotificationModal: React.FC<SendNotificationModalProps> = ({
             )}
 
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
               <Button 
                 type="submit" 
-                disabled={isSendingNotification || (sendType === 'single' && !formData.user_id)}
+                disabled={
+                  isSendingNotification || 
+                  (sendType === 'single' && !formData.user_id) ||
+                  !formData.message.trim() ||
+                  (formData.channel !== 'in_app' && !formData.title.trim())
+                }
               >
-                Send Notification
+                {isSendingNotification ? 'Sending...' : 'Send Notification'}
               </Button>
             </div>
           </form>

@@ -85,8 +85,12 @@ export const useNotifications = () => {
         .from('notifications')
         .select('*')
         .order('created_at', { ascending: false })
+        .limit(100)
       
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching notifications:', error)
+        throw error
+      }
       return data as Notification[]
     }
   })
@@ -256,6 +260,8 @@ export const useNotifications = () => {
       campaign_id?: string
       metadata?: any
     }) => {
+      console.log('Sending notification with params:', params)
+      
       const { data, error } = await supabase
         .rpc('send_notification', {
           p_user_id: params.user_id,
@@ -267,20 +273,27 @@ export const useNotifications = () => {
           p_metadata: params.metadata || {}
         })
       
-      if (error) throw error
+      if (error) {
+        console.error('Error sending notification:', error)
+        throw error
+      }
+      
+      console.log('Notification sent successfully:', data)
       return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['user-notifications'] })
       toast({
         title: "Success",
         description: "Notification sent successfully",
       })
     },
     onError: (error: any) => {
+      console.error('Send notification error:', error)
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to send notification",
         variant: "destructive",
       })
     }
