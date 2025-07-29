@@ -151,43 +151,24 @@ export type Database = {
           assigned_region: string | null
           can_approve_bookings: boolean | null
           created_at: string | null
-          email: string
-          full_name: string
           id: string
-          phone_no: string
-          profile_picture_url: string | null
           updated_at: string | null
         }
         Insert: {
           assigned_region?: string | null
           can_approve_bookings?: boolean | null
           created_at?: string | null
-          email: string
-          full_name: string
           id: string
-          phone_no: string
-          profile_picture_url?: string | null
           updated_at?: string | null
         }
         Update: {
           assigned_region?: string | null
           can_approve_bookings?: boolean | null
           created_at?: string | null
-          email?: string
-          full_name?: string
           id?: string
-          phone_no?: string
-          profile_picture_url?: string | null
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "admins_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "admins_id_fkey"
             columns: ["id"]
@@ -224,14 +205,14 @@ export type Database = {
             foreignKeyName: "booking_cancellations_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
-            referencedRelation: "bookings"
+            referencedRelation: "active_bookings_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "booking_cancellations_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "booking_cancellations_booking_id_fkey"
+            columns: ["booking_id"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
+            referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
           {
@@ -295,7 +276,85 @@ export type Database = {
             foreignKeyName: "booking_confirmations_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: true
+            referencedRelation: "active_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_confirmations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_drafts: {
+        Row: {
+          created_at: string | null
+          dropoff_address: string | null
+          dropoff_latitude: number | null
+          dropoff_longitude: number | null
+          estimated_fare: number | null
+          id: string
+          passenger_count: number | null
+          pickup_address: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          scheduled_time: string | null
+          selected_vehicle_type: string | null
+          service_type: string
+          session_id: string
+          special_instructions: string | null
+          status: string | null
+          updated_at: string | null
+          whatsapp_user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dropoff_address?: string | null
+          dropoff_latitude?: number | null
+          dropoff_longitude?: number | null
+          estimated_fare?: number | null
+          id?: string
+          passenger_count?: number | null
+          pickup_address?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          scheduled_time?: string | null
+          selected_vehicle_type?: string | null
+          service_type: string
+          session_id: string
+          special_instructions?: string | null
+          status?: string | null
+          updated_at?: string | null
+          whatsapp_user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dropoff_address?: string | null
+          dropoff_latitude?: number | null
+          dropoff_longitude?: number | null
+          estimated_fare?: number | null
+          id?: string
+          passenger_count?: number | null
+          pickup_address?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          scheduled_time?: string | null
+          selected_vehicle_type?: string | null
+          service_type?: string
+          session_id?: string
+          special_instructions?: string | null
+          status?: string | null
+          updated_at?: string | null
+          whatsapp_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_drafts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_session_state"
             referencedColumns: ["id"]
           },
         ]
@@ -338,6 +397,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "booking_schedules_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "active_bookings_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "booking_schedules_booking_id_fkey"
             columns: ["booking_id"]
@@ -397,6 +463,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "booking_stops_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "active_bookings_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "booking_stops_booking_id_fkey"
             columns: ["booking_id"]
@@ -579,13 +652,6 @@ export type Database = {
             foreignKeyName: "bookings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bookings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -607,8 +673,13 @@ export type Database = {
       }
       chatbot_session_state: {
         Row: {
+          booking_draft_id: string | null
           created_at: string
           current_step: string
+          error_count: number | null
+          flow_data: Json | null
+          flow_screen: string | null
+          flow_token: string | null
           id: string
           last_interaction_at: string
           session_data: Json | null
@@ -618,8 +689,13 @@ export type Database = {
           whatsapp_user_id: string
         }
         Insert: {
+          booking_draft_id?: string | null
           created_at?: string
           current_step?: string
+          error_count?: number | null
+          flow_data?: Json | null
+          flow_screen?: string | null
+          flow_token?: string | null
           id?: string
           last_interaction_at?: string
           session_data?: Json | null
@@ -629,8 +705,13 @@ export type Database = {
           whatsapp_user_id: string
         }
         Update: {
+          booking_draft_id?: string | null
           created_at?: string
           current_step?: string
+          error_count?: number | null
+          flow_data?: Json | null
+          flow_screen?: string | null
+          flow_token?: string | null
           id?: string
           last_interaction_at?: string
           session_data?: Json | null
@@ -640,13 +721,6 @@ export type Database = {
           whatsapp_user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "chatbot_session_state_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "chatbot_session_state_user_id_fkey"
             columns: ["user_id"]
@@ -717,14 +791,14 @@ export type Database = {
             foreignKeyName: "communication_threads_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
-            referencedRelation: "bookings"
+            referencedRelation: "active_bookings_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "communication_threads_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: "communication_threads_booking_id_fkey"
+            columns: ["booking_id"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
+            referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
           {
@@ -828,50 +902,31 @@ export type Database = {
         Row: {
           created_at: string | null
           dob: string | null
-          email: string | null
-          full_name: string
           id: string
           loyalty_points: number | null
-          phone_no: string
           preferred_payment_method: string | null
-          profile_picture_url: string | null
           referral_code: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           dob?: string | null
-          email?: string | null
-          full_name: string
           id: string
           loyalty_points?: number | null
-          phone_no: string
           preferred_payment_method?: string | null
-          profile_picture_url?: string | null
           referral_code?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           dob?: string | null
-          email?: string | null
-          full_name?: string
           id?: string
           loyalty_points?: number | null
-          phone_no?: string
           preferred_payment_method?: string | null
-          profile_picture_url?: string | null
           referral_code?: string | null
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "customers_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "customers_id_fkey"
             columns: ["id"]
@@ -946,16 +1001,12 @@ export type Database = {
           created_at: string | null
           current_latitude: number | null
           current_longitude: number | null
-          email: string | null
-          full_name: string
           id: string
           id_proof_document_url: string | null
           joined_on: string | null
           kyc_status: string | null
           license_document_url: string | null
           license_number: string
-          phone_no: string
-          profile_picture_url: string | null
           rating: number | null
           rejection_reason: string | null
           status: Database["public"]["Enums"]["driver_status_enum"] | null
@@ -966,16 +1017,12 @@ export type Database = {
           created_at?: string | null
           current_latitude?: number | null
           current_longitude?: number | null
-          email?: string | null
-          full_name: string
           id: string
           id_proof_document_url?: string | null
           joined_on?: string | null
           kyc_status?: string | null
           license_document_url?: string | null
           license_number: string
-          phone_no: string
-          profile_picture_url?: string | null
           rating?: number | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["driver_status_enum"] | null
@@ -986,16 +1033,12 @@ export type Database = {
           created_at?: string | null
           current_latitude?: number | null
           current_longitude?: number | null
-          email?: string | null
-          full_name?: string
           id?: string
           id_proof_document_url?: string | null
           joined_on?: string | null
           kyc_status?: string | null
           license_document_url?: string | null
           license_number?: string
-          phone_no?: string
-          profile_picture_url?: string | null
           rating?: number | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["driver_status_enum"] | null
@@ -1003,13 +1046,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "drivers_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "drivers_id_fkey"
             columns: ["id"]
@@ -1039,13 +1075,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "emergency_contacts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "emergency_contacts_user_id_fkey"
             columns: ["user_id"]
@@ -1162,6 +1191,51 @@ export type Database = {
         }
         Relationships: []
       }
+      google_places_cache: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string | null
+          formatted_address: string
+          id: string
+          last_searched_at: string | null
+          latitude: number
+          longitude: number
+          place_id: string
+          place_types: string[] | null
+          search_count: number | null
+          state: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          formatted_address: string
+          id?: string
+          last_searched_at?: string | null
+          latitude: number
+          longitude: number
+          place_id: string
+          place_types?: string[] | null
+          search_count?: number | null
+          state?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          formatted_address?: string
+          id?: string
+          last_searched_at?: string | null
+          latitude?: number
+          longitude?: number
+          place_id?: string
+          place_types?: string[] | null
+          search_count?: number | null
+          state?: string | null
+        }
+        Relationships: []
+      }
       locations: {
         Row: {
           created_at: string | null
@@ -1266,13 +1340,6 @@ export type Database = {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1335,13 +1402,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "notification_campaigns_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "notification_campaigns_created_by_fkey"
             columns: ["created_by"]
@@ -1441,13 +1501,6 @@ export type Database = {
             foreignKeyName: "notification_templates_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1533,13 +1586,6 @@ export type Database = {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1590,14 +1636,14 @@ export type Database = {
             foreignKeyName: "payments_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
-            referencedRelation: "bookings"
+            referencedRelation: "active_bookings_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payments_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
+            referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
           {
@@ -1806,6 +1852,13 @@ export type Database = {
             foreignKeyName: "reviews_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: true
+            referencedRelation: "active_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
@@ -1813,13 +1866,6 @@ export type Database = {
             foreignKeyName: "reviews_moderated_by_fkey"
             columns: ["moderated_by"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_moderated_by_fkey"
-            columns: ["moderated_by"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1827,21 +1873,7 @@ export type Database = {
             foreignKeyName: "reviews_reviewed_id_fkey"
             columns: ["reviewed_id"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_reviewed_id_fkey"
-            columns: ["reviewed_id"]
-            isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_reviewer_id_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
-            referencedRelation: "user_management_view"
             referencedColumns: ["id"]
           },
           {
@@ -1879,13 +1911,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "ride_passes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "ride_passes_user_id_fkey"
             columns: ["user_id"]
@@ -2006,7 +2031,21 @@ export type Database = {
             foreignKeyName: "shared_bookings_passenger_booking_id_fkey"
             columns: ["passenger_booking_id"]
             isOneToOne: false
+            referencedRelation: "active_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_bookings_passenger_booking_id_fkey"
+            columns: ["passenger_booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_bookings_primary_booking_id_fkey"
+            columns: ["primary_booking_id"]
+            isOneToOne: false
+            referencedRelation: "active_bookings_view"
             referencedColumns: ["id"]
           },
           {
@@ -2065,30 +2104,6 @@ export type Database = {
           },
         ]
       }
-      table_name: {
-        Row: {
-          data: Json | null
-          id: number
-          inserted_at: string
-          name: string | null
-          updated_at: string
-        }
-        Insert: {
-          data?: Json | null
-          id?: number
-          inserted_at?: string
-          name?: string | null
-          updated_at?: string
-        }
-        Update: {
-          data?: Json | null
-          id?: number
-          inserted_at?: string
-          name?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       user_activities: {
         Row: {
           activity_type: string
@@ -2128,14 +2143,14 @@ export type Database = {
             foreignKeyName: "user_activities_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
-            referencedRelation: "bookings"
+            referencedRelation: "active_bookings_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "user_activities_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: "user_activities_booking_id_fkey"
+            columns: ["booking_id"]
             isOneToOne: false
-            referencedRelation: "user_management_view"
+            referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
           {
@@ -2150,13 +2165,6 @@ export type Database = {
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "communication_threads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_activities_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_management_view"
             referencedColumns: ["id"]
           },
           {
@@ -2220,13 +2228,6 @@ export type Database = {
             columns: ["promo_code_id"]
             isOneToOne: false
             referencedRelation: "promo_codes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_promo_usages_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user_management_view"
             referencedColumns: ["id"]
           },
           {
@@ -2303,13 +2304,15 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           email: string | null
+          full_name: string | null
           id: string
           last_login_at: string | null
-          name: string | null
-          phone: string | null
+          phone_no: string | null
+          profile_picture_url: string | null
           role: Database["public"]["Enums"]["user_role_enum"]
           status: string | null
           updated_at: string | null
+          whatsapp_phone: string | null
         }
         Insert: {
           block_reason?: string | null
@@ -2318,13 +2321,15 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           email?: string | null
+          full_name?: string | null
           id: string
           last_login_at?: string | null
-          name?: string | null
-          phone?: string | null
+          phone_no?: string | null
+          profile_picture_url?: string | null
           role: Database["public"]["Enums"]["user_role_enum"]
           status?: string | null
           updated_at?: string | null
+          whatsapp_phone?: string | null
         }
         Update: {
           block_reason?: string | null
@@ -2333,22 +2338,17 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           email?: string | null
+          full_name?: string | null
           id?: string
           last_login_at?: string | null
-          name?: string | null
-          phone?: string | null
+          phone_no?: string | null
+          profile_picture_url?: string | null
           role?: Database["public"]["Enums"]["user_role_enum"]
           status?: string | null
           updated_at?: string | null
+          whatsapp_phone?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "users_blocked_by_fkey"
-            columns: ["blocked_by"]
-            isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "users_blocked_by_fkey"
             columns: ["blocked_by"]
@@ -2564,6 +2564,51 @@ export type Database = {
           },
         ]
       }
+      vehicle_types: {
+        Row: {
+          base_fare: number
+          capacity: number
+          created_at: string | null
+          description: string | null
+          display_name: string
+          icon_emoji: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          per_km_rate: number
+          per_minute_rate: number | null
+          sort_order: number | null
+        }
+        Insert: {
+          base_fare?: number
+          capacity: number
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          icon_emoji?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          per_km_rate?: number
+          per_minute_rate?: number | null
+          sort_order?: number | null
+        }
+        Update: {
+          base_fare?: number
+          capacity?: number
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          icon_emoji?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          per_km_rate?: number
+          per_minute_rate?: number | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       vehicles: {
         Row: {
           assigned_driver_id: string | null
@@ -2660,11 +2705,8 @@ export type Database = {
           company_name: string
           contact_person: string | null
           created_at: string | null
-          email: string
           gst_number: string | null
           id: string
-          phone_no: string
-          profile_picture_url: string | null
           updated_at: string | null
         }
         Insert: {
@@ -2672,11 +2714,8 @@ export type Database = {
           company_name: string
           contact_person?: string | null
           created_at?: string | null
-          email: string
           gst_number?: string | null
           id: string
-          phone_no: string
-          profile_picture_url?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -2684,21 +2723,11 @@ export type Database = {
           company_name?: string
           contact_person?: string | null
           created_at?: string | null
-          email?: string
           gst_number?: string | null
           id?: string
-          phone_no?: string
-          profile_picture_url?: string | null
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "vendors_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "vendors_id_fkey"
             columns: ["id"]
@@ -2773,17 +2802,43 @@ export type Database = {
             foreignKeyName: "wallets_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wallets_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_message_logs: {
+        Row: {
+          content_type: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          message_content: Json
+          message_type: string
+          status: string | null
+          whatsapp_user_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content: Json
+          message_type: string
+          status?: string | null
+          whatsapp_user_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content?: Json
+          message_type?: string
+          status?: string | null
+          whatsapp_user_id?: string
+        }
+        Relationships: []
       }
       zone_pricing: {
         Row: {
@@ -2846,50 +2901,47 @@ export type Database = {
       }
     }
     Views: {
-      user_management_view: {
+      active_bookings_view: {
         Row: {
-          assigned_region: string | null
-          block_reason: string | null
-          blocked_at: string | null
-          blocked_by: string | null
           created_at: string | null
-          deleted_at: string | null
-          driver_rating: number | null
-          driver_status:
-            | Database["public"]["Enums"]["driver_status_enum"]
-            | null
-          email: string | null
-          full_name: string | null
-          gst_number: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          driver_name: string | null
+          driver_phone: string | null
+          dropoff_address: string | null
+          fare_amount: number | null
           id: string | null
-          last_login_at: string | null
-          loyalty_points: number | null
-          phone_no: string | null
-          profile_picture_url: string | null
-          role: Database["public"]["Enums"]["user_role_enum"] | null
-          status: string | null
-          total_rides: number | null
-          updated_at: string | null
+          payment_status:
+            | Database["public"]["Enums"]["payment_status_enum"]
+            | null
+          pickup_address: string | null
+          service_type: string | null
+          status: Database["public"]["Enums"]["booking_status_enum"] | null
+          vehicle_details: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "users_blocked_by_fkey"
-            columns: ["blocked_by"]
-            isOneToOne: false
-            referencedRelation: "user_management_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "users_blocked_by_fkey"
-            columns: ["blocked_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
+      auto_assign_nearest_driver: {
+        Args: {
+          booking_id: string
+          pickup_latitude: number
+          pickup_longitude: number
+          max_distance_km?: number
+        }
+        Returns: string
+      }
+      calculate_booking_fare: {
+        Args: {
+          service_type_id: string
+          vehicle_type: string
+          distance_km: number
+          duration_minutes?: number
+          surge_multiplier?: number
+        }
+        Returns: number
+      }
       change_user_role: {
         Args: {
           user_uuid: string
@@ -2897,6 +2949,10 @@ export type Database = {
           new_role: Database["public"]["Enums"]["user_role_enum"]
         }
         Returns: boolean
+      }
+      cleanup_expired_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
@@ -2924,6 +2980,18 @@ export type Database = {
           customer_retention_rate: number
           top_customers: Json
           customer_acquisition_trend: Json
+        }[]
+      }
+      get_driver_performance: {
+        Args: { driver_id: string; period_days?: number }
+        Returns: {
+          total_trips: number
+          completed_trips: number
+          cancelled_trips: number
+          total_earnings: number
+          average_rating: number
+          acceptance_rate: number
+          online_hours: number
         }[]
       }
       get_driver_performance_analytics: {
@@ -2996,6 +3064,26 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role_enum"]
       }
+      get_user_stats: {
+        Args: { user_id: string }
+        Returns: {
+          total_bookings: number
+          completed_trips: number
+          cancelled_trips: number
+          total_spent: number
+          average_rating: number
+          last_trip_date: string
+        }[]
+      }
+      process_wallet_transaction: {
+        Args: {
+          wallet_id: string
+          amount: number
+          transaction_type: string
+          description?: string
+        }
+        Returns: string
+      }
       send_notification: {
         Args: {
           p_user_id: string
@@ -3007,6 +3095,10 @@ export type Database = {
           p_metadata?: Json
         }
         Returns: string
+      }
+      send_scheduled_reminders: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       soft_delete_user: {
         Args: { user_uuid: string; admin_uuid: string }
