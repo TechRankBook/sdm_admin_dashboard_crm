@@ -76,7 +76,14 @@ export const useAnalytics = (dateRange: DateRange) => {
       });
     } catch (err) {
       console.error('Error fetching analytics:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch analytics data');
+      
+      // Log more detailed error information
+      if (err && typeof err === 'object' && 'message' in err) {
+        console.error('Detailed error:', err);
+        setError(`Database error: ${err.message}`);
+      } else {
+        setError('Failed to fetch analytics data');
+      }
     } finally {
       setLoading(false);
     }
