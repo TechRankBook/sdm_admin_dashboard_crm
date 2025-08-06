@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useDrivers } from '@/hooks/useDrivers'
+import { useVehicleTypes } from '@/hooks/useVehicleTypes'
 import { vehicleFormSchema, type VehicleFormData } from './VehicleFormSchema'
 
 interface AddVehicleModalProps {
@@ -19,8 +20,9 @@ interface AddVehicleModalProps {
 }
 
 export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ open, onOpenChange, onVehicleAdded }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { drivers } = useDrivers()
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { drivers } = useDrivers();
+  const { vehicleTypes } = useVehicleTypes();
 
   const form = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleFormSchema),
@@ -54,6 +56,9 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ open, onOpenCh
 
     return publicUrl
   }
+ 
+
+
 
   const handleSubmit = async (data: VehicleFormData) => {
     console.log('Submitting vehicle data:', data)
@@ -272,11 +277,12 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ open, onOpenCh
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="sedan">Sedan</SelectItem>
-                        <SelectItem value="suv">SUV</SelectItem>
-                        <SelectItem value="bike">Bike</SelectItem>
-                        <SelectItem value="luxury">Luxury</SelectItem>
-                        <SelectItem value="van">Van</SelectItem>
+                        {/* Map over the fetched vehicle types to render SelectItems */}
+                        {vehicleTypes?.map((type) => (
+                          <SelectItem key={type.id} value={type.name}>
+                            {type.display_name || type.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

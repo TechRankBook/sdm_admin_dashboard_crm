@@ -262,58 +262,6 @@ export const BookingActionsPanel: React.FC<BookingActionsPanelProps> = ({ bookin
     <div className="space-y-6">
       {/* Assignment Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Driver Assignment */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <UserPlus className="w-5 h-5" />
-              <span>Driver Assignment</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {booking.driver ? (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="font-medium text-green-800">
-                  Currently assigned: {booking.driver.full_name}
-                </p>
-                <p className="text-sm text-green-600">
-                  {booking.driver.phone_no} • {booking.driver.license_number}
-                </p>
-              </div>
-            ) : (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="font-medium text-yellow-800">No driver assigned</p>
-              </div>
-            )}
-            
-            {canAssign && (
-              <>
-                <div>
-                  <Label htmlFor="driver-select">Select Driver</Label>
-                  <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a driver" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {drivers.map((driver) => (
-                        <SelectItem key={driver.id} value={driver.id}>
-                          {driver.full_name} - {driver.phone_no}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button 
-                  onClick={handleAssignDriver}
-                  disabled={loading || !selectedDriver}
-                  className="w-full"
-                >
-                  {booking.driver ? 'Reassign Driver' : 'Assign Driver'}
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Vehicle Assignment */}
         <Card>
@@ -367,6 +315,18 @@ export const BookingActionsPanel: React.FC<BookingActionsPanelProps> = ({ bookin
             )}
           </CardContent>
         </Card>
+        {/* Display Vehicles and Drivers status with assigned drivers */}
+         <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <UserPlus className="w-5 h-5" />
+              <span>Driver and Vehicle Status</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+                  
+          </CardContent>
+        </Card> 
       </div>
 
       {/* Actions Section */}

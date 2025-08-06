@@ -127,7 +127,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                 <TableHead>Booking ID</TableHead>
                 <TableHead>Service</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Driver</TableHead>
                 <TableHead>Vehicle</TableHead>
                 <TableHead>Route</TableHead>
                 <TableHead>Schedule</TableHead>
@@ -162,23 +161,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                     </div>
                   </TableCell>
 
-                  {/* Driver */}
-                  <TableCell>
-                    {booking.driver ? (
-                      <div className="flex items-center space-x-2">
-                        <User className="w-4 h-4 text-green-600" />
-                        <div>
-                          <p className="text-sm font-medium">{booking.driver.full_name}</p>
-                          <p className="text-xs text-gray-500">{booking.driver.phone_no}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-2">
-                        <AlertCircle className="w-4 h-4 text-orange-500" />
-                        <span className="text-sm text-orange-600">Unassigned</span>
-                      </div>
-                    )}
-                  </TableCell>
 
                   {/* Vehicle */}
                   <TableCell>
@@ -268,28 +250,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      
-                      {!booking.driver && ['pending', 'accepted'].includes(booking.status) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onAssignDriver(booking.id)}
-                          title="Assign Driver"
-                        >
-                          <UserPlus className="w-4 h-4 text-blue-600" />
-                        </Button>
-                      )}
-                      
-                      {!booking.vehicle && ['pending', 'accepted'].includes(booking.status) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onAssignVehicle(booking.id)}
-                          title="Assign Vehicle"
-                        >
-                          <CarFront className="w-4 h-4 text-blue-600" />
-                        </Button>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>

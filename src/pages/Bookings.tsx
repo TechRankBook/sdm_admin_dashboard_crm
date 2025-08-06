@@ -171,6 +171,7 @@ export const Bookings: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-500">Fare</p>
                           <p className="font-medium">${booking.fare_amount}</p>
+                        
                         </div>
                       </div>
                       {booking.driver && (

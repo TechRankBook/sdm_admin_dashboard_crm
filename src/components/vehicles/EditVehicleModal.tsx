@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { Vehicle } from '@/types/database'
 import { useDrivers } from '@/hooks/useDrivers'
+import { useVehicleTypes } from '@/hooks/useVehicleTypes'
 import { editVehicleFormSchema, type EditVehicleFormData } from './VehicleFormSchema'
 
 interface EditVehicleModalProps {
@@ -36,7 +37,8 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
     pollution_certificate_url: null as string | null,
   })
   
-  const { drivers } = useDrivers()
+  const { drivers } = useDrivers();
+  const{ vehicleTypes } = useVehicleTypes();
 
   const form = useForm<EditVehicleFormData>({
     resolver: zodResolver(editVehicleFormSchema),
@@ -386,11 +388,11 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="sedan">Sedan</SelectItem>
-                          <SelectItem value="suv">SUV</SelectItem>
-                          <SelectItem value="bike">Bike</SelectItem>
-                          <SelectItem value="luxury">Luxury</SelectItem>
-                          <SelectItem value="van">Van</SelectItem>
+                          {vehicleTypes?.map((type) => (
+                            <SelectItem key={type.id} value={type.name}>
+                              {type.display_name || type.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
