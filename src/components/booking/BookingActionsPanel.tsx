@@ -37,6 +37,9 @@ import {
 import { supabase } from '@/lib/supabase'
 import { Booking, Driver, Vehicle } from '@/types/database'
 import { toast } from 'sonner'
+import { VehicleDropdown } from './VehicleDropdown'
+import { VehicleStatusList } from './VehicleStatusList'
+import { useVehicleAssignment } from '@/hooks/useVehicleAssignment'
 
 interface BookingActionsPanelProps {
   booking: Booking
@@ -44,75 +47,26 @@ interface BookingActionsPanelProps {
 }
 
 export const BookingActionsPanel: React.FC<BookingActionsPanelProps> = ({ booking, onUpdate }) => {
-  const [drivers, setDrivers] = useState<Driver[]>([])
-  const [vehicles, setVehicles] = useState<Vehicle[]>([])
-  const [selectedDriver, setSelectedDriver] = useState<string>('')
   const [selectedVehicle, setSelectedVehicle] = useState<string>('')
   const [newStatus, setNewStatus] = useState<string>(booking.status)
   const [newFare, setNewFare] = useState<string>(booking.fare_amount.toString())
   const [fareReason, setFareReason] = useState<string>('')
   const [cancellationReason, setCancellationReason] = useState<string>('')
   const [loading, setLoading] = useState(false)
+  
+  const { 
+    vehicles, 
+    loading: vehiclesLoading, 
+    assignVehicleToBooking, 
+    getEligibleVehicles 
+  } = useVehicleAssignment()
 
   useEffect(() => {
-    fetchAvailableResources()
-  }, [])
-
-  const fetchAvailableResources = async () => {
-    try {
-      const [driversRes, vehiclesRes] = await Promise.all([
-        supabase
-          .from('drivers')
-          .select('*')
-          .eq('status', 'active')
-          .order('full_name'),
-        supabase
-          .from('vehicles')
-          .select('*')
-          .eq('status', 'active')
-          .is('assigned_driver_id', null)
-          .order('make, model')
-      ])
-
-      if (driversRes.error) throw driversRes.error
-      if (vehiclesRes.error) throw vehiclesRes.error
-
-      setDrivers(driversRes.data || [])
-      setVehicles(vehiclesRes.data || [])
-      
-      // Set current selections
-      if (booking.driver_id) setSelectedDriver(booking.driver_id)
-      if (booking.vehicle_id) setSelectedVehicle(booking.vehicle_id)
-    } catch (error) {
-      console.error('Error fetching resources:', error)
-      toast.error('Failed to load available drivers and vehicles')
+    // Set current vehicle selection if booking has one
+    if (booking.vehicle_id) {
+      setSelectedVehicle(booking.vehicle_id)
     }
-  }
-
-  const handleAssignDriver = async () => {
-    if (!selectedDriver) {
-      toast.error('Please select a driver')
-      return
-    }
-
-    setLoading(true)
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ driver_id: selectedDriver })
-        .eq('id', booking.id)
-
-      if (error) throw error
-
-      toast.success('Driver assigned successfully')
-      onUpdate(booking.id)
-    } catch (error) {
-      console.error('Error assigning driver:', error)
-      toast.error('Failed to assign driver')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [booking.vehicle_id])
 
   const handleAssignVehicle = async () => {
     if (!selectedVehicle) {
@@ -122,24 +76,10 @@ export const BookingActionsPanel: React.FC<BookingActionsPanelProps> = ({ bookin
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ vehicle_id: selectedVehicle })
-        .eq('id', booking.id)
-
-      if (error) throw error
-
-      // Update vehicle assignment
-      await supabase
-        .from('vehicles')
-        .update({ assigned_driver_id: booking.driver_id })
-        .eq('id', selectedVehicle)
-
-      toast.success('Vehicle assigned successfully')
-      onUpdate(booking.id)
-    } catch (error) {
-      console.error('Error assigning vehicle:', error)
-      toast.error('Failed to assign vehicle')
+      const success = await assignVehicleToBooking(booking.id, selectedVehicle)
+      if (success) {
+        onUpdate(booking.id)
+      }
     } finally {
       setLoading(false)
     }
@@ -280,10 +220,18 @@ export const BookingActionsPanel: React.FC<BookingActionsPanelProps> = ({ bookin
                 <p className="text-sm text-green-600">
                   {booking.vehicle.license_plate}
                 </p>
+                {booking.driver && (
+                  <p className="text-sm text-green-600 mt-1">
+                    Driver: {booking.driver.full_name}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="font-medium text-yellow-800">No vehicle assigned</p>
+                <p className="text-sm text-yellow-600">
+                  Select a vehicle with an assigned driver to complete the booking
+                </p>
               </div>
             )}
             
@@ -291,42 +239,28 @@ export const BookingActionsPanel: React.FC<BookingActionsPanelProps> = ({ bookin
               <>
                 <div>
                   <Label htmlFor="vehicle-select">Select Vehicle</Label>
-                  <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a vehicle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vehicles.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.id}>
-                          {vehicle.make} {vehicle.model} - {vehicle.license_plate}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <VehicleDropdown
+                    vehicles={vehicles}
+                    selectedValue={selectedVehicle}
+                    onValueChange={setSelectedVehicle}
+                    disabled={vehiclesLoading || loading}
+                    placeholder="Choose a vehicle with driver"
+                  />
                 </div>
                 <Button 
                   onClick={handleAssignVehicle}
-                  disabled={loading || !selectedVehicle}
+                  disabled={loading || !selectedVehicle || vehiclesLoading}
                   className="w-full"
                 >
-                  {booking.vehicle ? 'Reassign Vehicle' : 'Assign Vehicle'}
+                  {booking.vehicle ? 'Reassign Vehicle & Driver' : 'Assign Vehicle & Driver'}
                 </Button>
               </>
             )}
           </CardContent>
         </Card>
-        {/* Display Vehicles and Drivers status with assigned drivers */}
-         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <UserPlus className="w-5 h-5" />
-              <span>Driver and Vehicle Status</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-                  
-          </CardContent>
-        </Card> 
+
+        {/* Vehicle and Driver Status Display */}
+        <VehicleStatusList onRefresh={() => onUpdate(booking.id)} />
       </div>
 
       {/* Actions Section */}
