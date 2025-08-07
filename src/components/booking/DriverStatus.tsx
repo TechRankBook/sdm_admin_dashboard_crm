@@ -48,14 +48,6 @@ export const DriverStatus: React.FC<DriverStatusProps> = ({
           <Badge className={getStatusColor(driver.status)} variant="outline">
             {driver.status}
           </Badge>
-          {driver.rating && (
-            <div className="flex items-center space-x-1">
-              <Star className="w-3 h-3 text-yellow-500 fill-current" />
-              <span className="text-xs text-muted-foreground">
-                {driver.rating.toFixed(1)}
-              </span>
-            </div>
-          )}
         </div>
       </div>
     )

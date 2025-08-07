@@ -22,7 +22,10 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone')
   const [otpCode, setOtpCode] = useState('')
-  const [phoneNumberForOtp, setPhoneNumberForOtp] = useState('') // Stores the phone number that received the OTP
+  const [phoneNumberForOtp, setPhoneNumberForOtp] = useState('') 
+  const [userId,setUserId]=useState<string>('');
+   const [accessToken, setAccessToken] = useState<string>('');
+
 
   const { refetch } = useDrivers()
 
@@ -94,6 +97,67 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
    * Handles the final submission of driver details.
    * This function now also triggers the OTP verification via the 'create-driver' Edge Function.
    */
+  function handleOtpVerification(): void {
+    setIsSubmitting(true)
+           if (otpCode.length !== 6) {
+      toast.error('Please enter the 6-digit OTP.')
+      setIsSubmitting(false)
+      return
+    }
+     console.log('OTP:', otpCode)
+    console.log('Stored Phone Number:', phoneNumberForOtp)
+    if(!phoneNumberForOtp) {
+      toast.error('No phone number found for OTP verification.')
+      setIsSubmitting(false)
+      return
+    }
+   
+    if(!otpCode) {
+      toast.error('No OTP found for verification.')
+      setIsSubmitting(false)
+      return
+    }
+ console.log('OTP:', otpCode)
+    console.log('Stored Phone Number:', phoneNumberForOtp)
+
+    // Check if SUPABASE_URL is available from the imported lib/supabase
+    if (!SUPABASE_URL) {
+      toast.error('Supabase URL is not configured. Please check your Supabase client setup in lib/supabase.ts.')
+      setIsSubmitting(false);
+      return;
+    }
+    // call the 'otp-verify' Edge Function using the imported SUPABASE_URL
+    fetch(`${SUPABASE_URL}/functions/v1/verify-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // No Authorization header needed here as the Edge Function uses Service Role Key
+      },
+      body: JSON.stringify({ phone_no: phoneNumberForOtp, otp_code: otpCode }), // Pass the phone number and OTP
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        if (result.error) {
+          console.error('OTP verification error:', result.error)
+          toast.error(`Failed to verify OTP: ${result.error || 'Unknown error'}`)
+          return
+        }
+        console.log('OTP verification successful:', result)
+        setUserId(result.user.id); // Store the user ID for later use
+        setAccessToken(result.accessToken); // Store the access token for Edge Function calls
+        toast.success('OTP verified successfully!')
+        setStep('details') // Proceed to the next step
+      })
+      .catch((error) => {
+        console.error('Unexpected error during OTP verification:', error)
+        toast.error('An unexpected error occurred while verifying OTP')
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      });
+
+        }
+
   const handleSubmit = async (data: DriverFormData) => {
     setIsSubmitting(true)
 
@@ -140,23 +204,25 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
         toast.success('Profile picture uploaded successfully!')
       }
     }
-
+ console.log('accessToken:', accessToken);
+    console.log('userId:', userId);
+    console.log('data:', data);
     try {
-      // Call the 'create-driver' Edge Function using the imported SUPABASE_URL
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/create-driver`, {
+      // Call the 'create-driver' Edge Function using the imported SUPABASE_URLhttps://gmualcoqyztvtsqhjlzb.supabase.co/functions/v1/create-driver-profile
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/create-driver-profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`, // Use the stored access token for Edge Function calls
           // No Authorization header needed here as the Edge Function uses Service Role Key
         },
         body: JSON.stringify({
-          phone_no: phoneNumberForOtp, // Use the phone number that received the OTP
-          otp_code: otpCode,
-          full_name: data.full_name,
+          userId: userId, // Use the stored user ID from OTP verification
+          fullName: data.full_name,
           email: data.email,
-          license_number: data.license_number,
+          licenseNumber: data.license_number,
           status: data.status,
-          profile_picture_url: profilePictureUrl, // Pass the uploaded URL
+          profilePictureUrl: profilePictureUrl, // Pass the uploaded URL
         }),
       })
 
@@ -206,7 +272,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter phone number (+1234567890)" />
+                      <Input {...field} placeholder="Enter 10 digit phone number " />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -229,6 +295,8 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
         )
 
       case 'otp':
+        
+
         return (
           <div className="space-y-4">
             <div className="text-center">
@@ -257,7 +325,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
               </Button>
               <Button
                 type="button"
-                onClick={() => setStep('details')} // Simply move to details step, actual OTP verification is on final submit
+                onClick={() => handleOtpVerification()} // Simply move to details step, actual OTP verification is on final submit
                 disabled={isSubmitting || otpCode.length !== 6}
               >
                 Continue
@@ -342,8 +410,9 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="on_ride">On Ride</SelectItem>
                         <SelectItem value="suspended">Suspended</SelectItem>
-                        <SelectItem value="offline">Offline</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

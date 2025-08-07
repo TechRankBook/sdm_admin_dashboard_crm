@@ -62,9 +62,11 @@ export const BookingActionsPanel: React.FC<BookingActionsPanelProps> = ({ bookin
   } = useVehicleAssignment()
 
   useEffect(() => {
-    // Set current vehicle selection if booking has one
+    // Set current vehicle selection if booking has one, otherwise clear it
     if (booking.vehicle_id) {
       setSelectedVehicle(booking.vehicle_id)
+    } else {
+      setSelectedVehicle('')
     }
   }, [booking.vehicle_id])
 
@@ -78,8 +80,13 @@ export const BookingActionsPanel: React.FC<BookingActionsPanelProps> = ({ bookin
     try {
       const success = await assignVehicleToBooking(booking.id, selectedVehicle)
       if (success) {
+        // Don't clear selection - let useEffect handle synchronization with booking.vehicle_id
         onUpdate(booking.id)
+        toast.success(`${booking.vehicle ? 'Vehicle reassigned' : 'Vehicle assigned'} successfully!`)
       }
+    } catch (error) {
+      console.error('Assignment error:', error)
+      toast.error('Failed to assign vehicle. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -211,50 +218,79 @@ export const BookingActionsPanel: React.FC<BookingActionsPanelProps> = ({ bookin
               <span>Vehicle Assignment</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {booking.vehicle ? (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="font-medium text-green-800">
-                  Currently assigned: {booking.vehicle.make} {booking.vehicle.model}
-                </p>
-                <p className="text-sm text-green-600">
-                  {booking.vehicle.license_plate}
-                </p>
-                {booking.driver && (
-                  <p className="text-sm text-green-600 mt-1">
-                    Driver: {booking.driver.full_name}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="font-medium text-yellow-800">No vehicle assigned</p>
-                <p className="text-sm text-yellow-600">
-                  Select a vehicle with an assigned driver to complete the booking
-                </p>
-              </div>
-            )}
-            
-            {canAssign && (
-              <>
-                <div>
-                  <Label htmlFor="vehicle-select">Select Vehicle</Label>
-                  <VehicleDropdown
-                    vehicles={vehicles}
-                    selectedValue={selectedVehicle}
-                    onValueChange={setSelectedVehicle}
-                    disabled={vehiclesLoading || loading}
-                    placeholder="Choose a vehicle with driver"
-                  />
+          <CardContent className="space-y-8">
+            {/* Current Assignment Display */}
+            <div>
+              {booking.vehicle ? (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
+                  <div>
+                    <p className="font-medium text-green-800 mb-1">
+                      Currently assigned: {booking.vehicle.make} {booking.vehicle.model}
+                    </p>
+                    <p className="text-sm text-green-600 font-mono">
+                      {booking.vehicle.license_plate}
+                    </p>
+                  </div>
+                  {booking.driver && (
+                    <div className="pt-3 border-t border-green-200 space-y-1">
+                      <p className="text-sm text-green-600">
+                        <span className="font-medium">Driver:</span> {booking.driver.full_name}
+                      </p>
+                      {booking.driver.phone_no && (
+                        <p className="text-sm text-green-600">
+                          <span className="font-medium">Phone:</span> {booking.driver.phone_no}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="font-medium text-yellow-800 mb-2">No vehicle assigned</p>
+                  <p className="text-sm text-yellow-600">
+                    Select a vehicle with an assigned driver to complete the booking
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Vehicle Selection */}
+            {canAssign && (
+              <div className="pt-6 border-t border-border space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="vehicle-select" className="text-sm font-medium text-foreground block">
+                    Select Vehicle & Driver
+                  </Label>
+                  <div className="relative z-20">
+                    <VehicleDropdown
+                      vehicles={vehicles}
+                      selectedValue={selectedVehicle}
+                      onValueChange={setSelectedVehicle}
+                      disabled={vehiclesLoading || loading}
+                      placeholder="Choose a vehicle with driver"
+                    />
+                  </div>
+                  {vehiclesLoading && (
+                    <p className="text-xs text-muted-foreground">Loading available vehicles...</p>
+                  )}
+                </div>
+                
                 <Button 
                   onClick={handleAssignVehicle}
                   disabled={loading || !selectedVehicle || vehiclesLoading}
-                  className="w-full"
+                  className="w-full h-11"
+                  size="default"
                 >
-                  {booking.vehicle ? 'Reassign Vehicle & Driver' : 'Assign Vehicle & Driver'}
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      <span>Processing...</span>
+                    </div>
+                  ) : (
+                    booking.vehicle ? 'Reassign Vehicle & Driver' : 'Assign Vehicle & Driver'
+                  )}
                 </Button>
-              </>
+              </div>
             )}
           </CardContent>
         </Card>

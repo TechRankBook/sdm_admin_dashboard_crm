@@ -36,7 +36,7 @@ export const BookingDetailView: React.FC = () => {
           *,
           service_type:service_types(*),
           rental_package:rental_packages(*),
-          driver:drivers(*),
+          driver:drivers(*, users!inner(full_name, phone_no, email, profile_picture_url)),
           vehicle:vehicles(*),
           stops:booking_stops(*),
           confirmations:booking_confirmations(*),
@@ -47,6 +47,19 @@ export const BookingDetailView: React.FC = () => {
         .single()
 
       if (bookingError) throw bookingError
+
+      // Transform driver data to flatten user fields if driver exists
+      if (bookingData.driver && bookingData.driver.users) {
+        const userData = (bookingData.driver.users as any)
+        bookingData.driver = {
+          ...bookingData.driver,
+          full_name: userData?.full_name || '',
+          email: userData?.email || '',
+          phone_no: userData?.phone_no || '',
+          profile_picture_url: userData?.profile_picture_url || '',
+          users: undefined // Remove the nested object
+        }
+      }
 
       setBooking(bookingData)
 

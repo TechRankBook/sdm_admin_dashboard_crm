@@ -126,7 +126,7 @@ export const Drivers: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              {['all', 'active', 'inactive', 'on_break'].map(status => (
+              {['all', 'active', 'inactive', 'on_ride','suspended'].map(status => (
                 <Button
                   key={status}
                   variant={statusFilter === status ? 'default' : 'outline'}

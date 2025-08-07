@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Car, User, AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DriverStatus } from './DriverStatus'
@@ -220,78 +221,92 @@ export const VehicleStatusList: React.FC<VehicleStatusListProps> = ({ onRefresh 
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Vehicles Section */}
-        <div>
-          <h4 className="font-medium mb-3 flex items-center space-x-2">
-            <Car className="w-4 h-4" />
-            <span>Vehicles ({vehicles.length})</span>
-          </h4>
+      <CardContent>
+        <Tabs defaultValue="vehicles" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="vehicles" className="flex items-center space-x-2">
+              <Car className="w-4 h-4" />
+              <span>Vehicles ({vehicles.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="drivers" className="flex items-center space-x-2">
+              <User className="w-4 h-4" />
+              <span>Unassigned Drivers ({unassignedDrivers.length})</span>
+            </TabsTrigger>
+          </TabsList>
           
-          {vehicles.length === 0 ? (
-            <div className="text-center py-6">
-              <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">No vehicles found</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {vehicles.map((vehicle) => (
-                <div key={vehicle.id} className="p-3 border border-border rounded-lg bg-card">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h5 className="font-medium">
-                        {vehicle.make} {vehicle.model}
-                      </h5>
-                      <p className="text-sm text-muted-foreground font-mono">
-                        {vehicle.license_plate} • {vehicle.type}
-                      </p>
-                    </div>
-                    <Badge className={getVehicleStatusColor(vehicle.status)} variant="outline">
-                      {vehicle.status}
-                    </Badge>
-                  </div>
-
-                  {vehicle.assigned_driver ? (
-                    <div className="pt-2 border-t border-border">
-                      <DriverStatus driver={vehicle.assigned_driver} compact />
-                    </div>
-                  ) : (
-                    <div className="pt-2 border-t border-border">
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>No driver assigned</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Unassigned Drivers Section */}
-        {unassignedDrivers.length > 0 && (
-          <>
-            <Separator />
-            <div>
-              <h4 className="font-medium mb-3 flex items-center space-x-2">
-                <User className="w-4 h-4" />
-                <span>Unassigned Drivers ({unassignedDrivers.length})</span>
-              </h4>
-              
-              <div className="space-y-3">
-                {unassignedDrivers.map((driver) => (
-                  <DriverStatus 
-                    key={driver.id} 
-                    driver={driver} 
-                    showContact={false}
-                    compact={false}
-                  />
-                ))}
+          <TabsContent value="vehicles" className="mt-6">
+            {vehicles.length === 0 ? (
+              <div className="text-center py-8">
+                <Car className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium text-lg mb-2">No vehicles found</h3>
+                <p className="text-muted-foreground">
+                  There are no vehicles in the fleet currently.
+                </p>
               </div>
-            </div>
-          </>
-        )}
+            ) : (
+              <ScrollArea className="h-[320px] pr-4">
+                <div className="space-y-3">
+                  {vehicles.map((vehicle) => (
+                    <div key={vehicle.id} className="p-3 border border-border rounded-lg bg-card hover:bg-muted/50 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h5 className="font-medium text-sm truncate">
+                            {vehicle.make} {vehicle.model}
+                          </h5>
+                          <p className="text-xs text-muted-foreground font-mono truncate mt-1">
+                            {vehicle.license_plate} • {vehicle.type}
+                          </p>
+                        </div>
+                        <Badge className={`${getVehicleStatusColor(vehicle.status)} ml-2 flex-shrink-0 text-xs`} variant="outline">
+                          {vehicle.status}
+                        </Badge>
+                      </div>
+
+                      {vehicle.assigned_driver ? (
+                        <div className="pt-2 border-t border-border">
+                          <DriverStatus driver={vehicle.assigned_driver} compact />
+                        </div>
+                      ) : (
+                        <div className="pt-2 border-t border-border">
+                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                            <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                            <span>No driver assigned</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="drivers" className="mt-6">
+            {unassignedDrivers.length === 0 ? (
+              <div className="text-center py-8">
+                <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium text-lg mb-2">All drivers are assigned</h3>
+                <p className="text-muted-foreground">
+                  Every active driver is currently assigned to a vehicle.
+                </p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[320px] pr-4">
+                <div className="space-y-3">
+                  {unassignedDrivers.map((driver) => (
+                    <div key={driver.id} className="p-3 border border-border rounded-lg bg-card hover:bg-muted/50 transition-colors">
+                      <DriverStatus 
+                        driver={driver} 
+                        showContact={false}
+                        compact={true}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   )
