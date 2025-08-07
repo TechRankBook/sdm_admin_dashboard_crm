@@ -9,7 +9,7 @@ export const fetchUserRole = async (userId: string, retryCount = 0): Promise<str
   try {
     // Shorter timeout with retry logic
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Role fetch timeout')), 3000) // 3 second timeout per attempt
+      setTimeout(() => reject(new Error('Role fetch timeout')), 2000) // 2 second timeout per attempt
     })
 
     const queryPromise = supabase
@@ -23,10 +23,15 @@ export const fetchUserRole = async (userId: string, retryCount = 0): Promise<str
     if (result.error) {
       authLog("Database error fetching role:", result.error.message)
       
-      // Retry on network errors
-      if (retryCount < 2 && (result.error.message.includes('network') || result.error.message.includes('timeout'))) {
-        authLog("Retrying role fetch due to network error")
-        await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
+      // Retry on specific errors
+      if (retryCount < 2 && (
+        result.error.message.includes('network') || 
+        result.error.message.includes('timeout') ||
+        result.error.message.includes('JWT') ||
+        result.error.message.includes('refresh')
+      )) {
+        authLog("Retrying role fetch due to recoverable error")
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000)) // Exponential backoff
         return fetchUserRole(userId, retryCount + 1)
       }
       
@@ -40,10 +45,15 @@ export const fetchUserRole = async (userId: string, retryCount = 0): Promise<str
   } catch (error: any) {
     authLog("Exception during role fetch:", error.message)
     
-    // Retry on timeout errors
-    if (retryCount < 2 && error.message.includes('timeout')) {
-      authLog("Retrying role fetch due to timeout")
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
+    // Retry on timeout and JWT errors
+    if (retryCount < 2 && (
+      error.message.includes('timeout') ||
+      error.message.includes('JWT') ||
+      error.message.includes('refresh') ||
+      error.message.includes('fetch')
+    )) {
+      authLog("Retrying role fetch due to recoverable exception")
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000)) // Exponential backoff
       return fetchUserRole(userId, retryCount + 1)
     }
     

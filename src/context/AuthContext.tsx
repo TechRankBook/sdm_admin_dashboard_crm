@@ -33,10 +33,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (event, newSession) => {
             if (cleanup) return
             authLog("Auth state change event:", event)
-            // Use setTimeout to prevent potential race conditions
+            // Use setTimeout to prevent auth callback blocking
             setTimeout(() => {
               if (!cleanup) {
-                handleSessionUpdate(newSession, 'listener')
+                handleSessionUpdate(newSession, 'listener').catch(error => {
+                  authLog("Error in auth state change handler:", error.message)
+                  if (!cleanup) clearLoading()
+                })
               }
             }, 0)
           }

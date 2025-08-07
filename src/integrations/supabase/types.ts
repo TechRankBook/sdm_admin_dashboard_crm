@@ -176,6 +176,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_admins_user"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       booking_cancellations: {
@@ -486,7 +493,7 @@ export type Database = {
           created_at: string | null
           distance_km: number | null
           driver_id: string | null
-          dropoff_address: string | null
+          dropoff_address: string
           dropoff_latitude: number | null
           dropoff_location_id: string | null
           dropoff_longitude: number | null
@@ -505,7 +512,7 @@ export type Database = {
           payment_status:
             | Database["public"]["Enums"]["payment_status_enum"]
             | null
-          pickup_address: string | null
+          pickup_address: string
           pickup_latitude: number | null
           pickup_location_id: string | null
           pickup_longitude: number | null
@@ -525,7 +532,7 @@ export type Database = {
           trip_type: string | null
           updated_at: string | null
           upgrade_charges: number | null
-          user_id: string | null
+          user_id: string
           vehicle_id: string | null
           vehicle_type: string | null
           waiting_time_minutes: number | null
@@ -537,7 +544,7 @@ export type Database = {
           created_at?: string | null
           distance_km?: number | null
           driver_id?: string | null
-          dropoff_address?: string | null
+          dropoff_address: string
           dropoff_latitude?: number | null
           dropoff_location_id?: string | null
           dropoff_longitude?: number | null
@@ -556,7 +563,7 @@ export type Database = {
           payment_status?:
             | Database["public"]["Enums"]["payment_status_enum"]
             | null
-          pickup_address?: string | null
+          pickup_address: string
           pickup_latitude?: number | null
           pickup_location_id?: string | null
           pickup_longitude?: number | null
@@ -576,7 +583,7 @@ export type Database = {
           trip_type?: string | null
           updated_at?: string | null
           upgrade_charges?: number | null
-          user_id?: string | null
+          user_id: string
           vehicle_id?: string | null
           vehicle_type?: string | null
           waiting_time_minutes?: number | null
@@ -588,7 +595,7 @@ export type Database = {
           created_at?: string | null
           distance_km?: number | null
           driver_id?: string | null
-          dropoff_address?: string | null
+          dropoff_address?: string
           dropoff_latitude?: number | null
           dropoff_location_id?: string | null
           dropoff_longitude?: number | null
@@ -607,7 +614,7 @@ export type Database = {
           payment_status?:
             | Database["public"]["Enums"]["payment_status_enum"]
             | null
-          pickup_address?: string | null
+          pickup_address?: string
           pickup_latitude?: number | null
           pickup_location_id?: string | null
           pickup_longitude?: number | null
@@ -627,7 +634,7 @@ export type Database = {
           trip_type?: string | null
           updated_at?: string | null
           upgrade_charges?: number | null
-          user_id?: string | null
+          user_id?: string
           vehicle_id?: string | null
           vehicle_type?: string | null
           waiting_time_minutes?: number | null
@@ -955,6 +962,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_customers_user"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       driver_maintenance_logs: {
@@ -1069,6 +1083,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "drivers_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_drivers_user"
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "users"
@@ -2780,6 +2801,13 @@ export type Database = {
           year?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_vehicles_assigned_driver"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vehicles_assigned_driver_id_fkey"
             columns: ["assigned_driver_id"]

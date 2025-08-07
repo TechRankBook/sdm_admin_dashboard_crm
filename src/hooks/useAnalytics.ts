@@ -29,14 +29,8 @@ export const useAnalytics = (dateRange: DateRange) => {
       const startDate = dateRange.start.toISOString();
       const endDate = dateRange.end.toISOString();
 
-      // Fetch all analytics data in parallel
-      const [
-        revenueResult,
-        bookingResult,
-        driverResult,
-        customerResult,
-        serviceResult
-      ] = await Promise.all([
+      // Fetch all analytics data with individual error handling
+      const results = await Promise.allSettled([
         supabase.rpc('get_revenue_analytics', {
           start_date: startDate,
           end_date: endDate
@@ -59,31 +53,62 @@ export const useAnalytics = (dateRange: DateRange) => {
         })
       ]);
 
-      // Check for errors
-      if (revenueResult.error) throw revenueResult.error;
-      if (bookingResult.error) throw bookingResult.error;
-      if (driverResult.error) throw driverResult.error;
-      if (customerResult.error) throw customerResult.error;
-      if (serviceResult.error) throw serviceResult.error;
+      const [revenueResult, bookingResult, driverResult, customerResult, serviceResult] = results;
 
-      // Process and set data
-      setData({
-        revenue: revenueResult.data?.[0] as RevenueAnalytics || null,
-        bookings: bookingResult.data?.[0] as BookingAnalytics || null,
-        drivers: driverResult.data?.[0] as DriverPerformanceAnalytics || null,
-        customers: customerResult.data?.[0] as CustomerAnalytics || null,
-        service: serviceResult.data?.[0] as ServicePerformanceAnalytics || null,
+      // Default values for failed calls
+      const defaultData = {
+        revenue: null,
+        bookings: null,
+        drivers: null,
+        customers: null,
+        service: null,
+      };
+
+      // Extract data with fallbacks
+      const extractData = (result: PromiseSettledResult<any>, fallback: any = null) => {
+        if (result.status === 'fulfilled' && result.value && !result.value.error) {
+          return result.value.data?.[0] || fallback;
+        }
+        return fallback;
+      };
+
+      // Collect errors for reporting
+      const errors: string[] = [];
+      results.forEach((result, index) => {
+        const names = ['revenue', 'booking', 'driver', 'customer', 'service'];
+        if (result.status === 'rejected') {
+          errors.push(`${names[index]} analytics failed: ${result.reason?.message || 'Unknown error'}`);
+        } else if (result.value?.error) {
+          errors.push(`${names[index]} analytics error: ${result.value.error.message}`);
+        }
       });
+
+      if (errors.length > 0) {
+        console.warn('Analytics errors:', errors);
+        setError(`Some analytics data unavailable: ${errors.length} of 5 sources failed`);
+      }
+
+      // Set data with fallbacks
+      setData({
+        revenue: extractData(revenueResult),
+        bookings: extractData(bookingResult),
+        drivers: extractData(driverResult),
+        customers: extractData(customerResult),
+        service: extractData(serviceResult),
+      });
+
     } catch (err) {
       console.error('Error fetching analytics:', err);
+      setError(`Failed to fetch analytics: ${err instanceof Error ? err.message : 'Unknown error'}`);
       
-      // Log more detailed error information
-      if (err && typeof err === 'object' && 'message' in err) {
-        console.error('Detailed error:', err);
-        setError(`Database error: ${err.message}`);
-      } else {
-        setError('Failed to fetch analytics data');
-      }
+      // Set null data on complete failure
+      setData({
+        revenue: null,
+        bookings: null,
+        drivers: null,
+        customers: null,
+        service: null,
+      });
     } finally {
       setLoading(false);
     }

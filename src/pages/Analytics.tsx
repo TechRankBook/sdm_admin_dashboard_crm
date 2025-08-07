@@ -14,7 +14,8 @@ import {
   Car,
   Loader2,
   AlertCircle,
-  TrendingDown
+  TrendingDown,
+  RefreshCw
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -33,6 +34,8 @@ import {
 } from 'recharts'
 import { useAnalytics } from '@/hooks/useAnalytics'
 import { DateRange } from '@/types/analytics'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
@@ -89,13 +92,19 @@ export const Analytics: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Analytics & Reporting</h1>
+            <p className="text-gray-600">Loading insights and trends for your fleet operations</p>
+          </div>
+        </div>
+        <LoadingSpinner size="lg" text="Loading analytics data..." className="min-h-[400px]" />
       </div>
     );
   }
 
-  if (error) {
+  if (error && !data.revenue && !data.bookings && !data.drivers && !data.customers && !data.service) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -103,11 +112,15 @@ export const Analytics: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">Analytics & Reporting</h1>
             <p className="text-gray-600">Insights and trends for your fleet operations</p>
           </div>
+          <Button onClick={refetch} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
         </div>
-        <Alert>
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Error loading analytics data: {error}
+            Failed to load analytics data: {error}
           </AlertDescription>
         </Alert>
       </div>
@@ -115,23 +128,38 @@ export const Analytics: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analytics & Reporting</h1>
-          <p className="text-gray-600">Insights and trends for your fleet operations</p>
+    <ErrorBoundary>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Analytics & Reporting</h1>
+            <p className="text-gray-600">Insights and trends for your fleet operations</p>
+          </div>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={refetch}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button variant="outline" onClick={handleExportCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button variant="outline" onClick={handleExportPDF}>
+              <Download className="h-4 w-4 mr-2" />
+              Export PDF
+            </Button>
+          </div>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-          <Button variant="outline" onClick={handleExportPDF}>
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
-          </Button>
-        </div>
-      </div>
+
+        {/* Show partial error warning if some data failed to load */}
+        {error && (data.revenue || data.bookings || data.drivers || data.customers || data.service) && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Warning: {error}
+            </AlertDescription>
+          </Alert>
+        )}
 
       {/* Date Range Selector */}
       <Card>
@@ -533,5 +561,6 @@ export const Analytics: React.FC = () => {
         </Card>
       </div>
     </div>
+    </ErrorBoundary>
   )
 }
