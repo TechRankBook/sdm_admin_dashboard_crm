@@ -3322,6 +3322,7 @@ export type Database = {
           model: string | null
           rating: number | null
           total_rides: number | null
+          type: string | null
           vehicle_status:
             | Database["public"]["Enums"]["vehicle_status_enum"]
             | null
@@ -3382,6 +3383,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vehicles_with_driver_details"
             referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "vehicles_type_fkey"
+            columns: ["type"]
+            isOneToOne: false
+            referencedRelation: "vehicle_types"
+            referencedColumns: ["name"]
           },
         ]
       }

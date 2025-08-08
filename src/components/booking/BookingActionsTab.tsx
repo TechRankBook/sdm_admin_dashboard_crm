@@ -56,15 +56,15 @@ export const BookingActionsTab: React.FC<BookingActionsTabProps> = ({
           model,
           license_plate,
           type,
-          status,
+          status:vehicle_status,
           driver_id,
           driver_name,
           driver_phone,
           driver_status,
-          driver_rating,
-          driver_profile_picture
+          driver_rating:rating,
+          driver_profile_picture:driver_profile_picture_url
         `)
-        .eq('status', 'active')
+        .eq('vehicle_status', 'active')
         .eq('driver_status', 'active')
         .not('driver_id', 'is', null)
         .order('make', { ascending: true })

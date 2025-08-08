@@ -37,13 +37,14 @@ export const useVehicleAssignment = () => {
           model,
           license_plate,
           type,
-          status,
+          status:vehicle_status,
           assigned_driver_id,
           driver_id,
           driver_name,
           driver_phone,
           driver_status,
-          driver_rating,
+          driver_rating:rating,
+          driver_profile_picture:driver_profile_picture_url,
           total_rides
         `)
         .order('make', { ascending: true })

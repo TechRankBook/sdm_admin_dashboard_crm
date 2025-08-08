@@ -84,7 +84,7 @@ export const VehicleStatusList: React.FC<VehicleStatusListProps> = ({ onRefresh 
           type,
           status,
           assigned_driver_id,
-          drivers:assigned_driver_id (
+          drivers:drivers!vehicles_assigned_driver_id_fkey (
             id,
             status,
             rating,
