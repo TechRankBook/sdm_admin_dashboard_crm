@@ -177,7 +177,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_admins_user"
+            foreignKeyName: "admins_user_id_fkey"
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "users"
@@ -963,7 +963,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_customers_user"
+            foreignKeyName: "customers_user_id_fkey"
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "users"
@@ -1089,7 +1089,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_drivers_user"
+            foreignKeyName: "drivers_user_id_fkey"
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "users"
@@ -2803,6 +2803,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_vehicles_assigned_driver"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_assigned_driver_fkey"
             columns: ["assigned_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
