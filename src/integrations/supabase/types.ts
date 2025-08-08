@@ -3307,32 +3307,24 @@ export type Database = {
       vehicles_with_driver_details: {
         Row: {
           assigned_driver_id: string | null
-          color: string | null
-          created_at: string | null
-          current_latitude: number | null
-          current_longitude: number | null
           driver_email: string | null
           driver_id: string | null
           driver_name: string | null
           driver_phone: string | null
-          driver_profile_picture: string | null
-          driver_rating: number | null
+          driver_profile_picture_url: string | null
           driver_status:
             | Database["public"]["Enums"]["driver_status_enum"]
             | null
-          driver_user_status: string | null
           id: string | null
-          kyc_status: string | null
-          license_number: string | null
+          is_available: boolean | null
           license_plate: string | null
           make: string | null
           model: string | null
-          status: Database["public"]["Enums"]["vehicle_status_enum"] | null
+          rating: number | null
           total_rides: number | null
-          type: string | null
-          updated_at: string | null
-          vendor_id: string | null
-          year: number | null
+          vehicle_status:
+            | Database["public"]["Enums"]["vehicle_status_enum"]
+            | null
         }
         Relationships: [
           {
@@ -3390,20 +3382,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vehicles_with_driver_details"
             referencedColumns: ["driver_id"]
-          },
-          {
-            foreignKeyName: "vehicles_type_fkey"
-            columns: ["type"]
-            isOneToOne: false
-            referencedRelation: "vehicle_types"
-            referencedColumns: ["name"]
-          },
-          {
-            foreignKeyName: "vehicles_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["id"]
           },
         ]
       }
