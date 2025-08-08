@@ -29,9 +29,41 @@ export const useCommunication = () => {
 
       if (error) throw error
 
+      // Fetch additional user data for threads that have customer_id or driver_id
+      const threadsWithUserData = await Promise.all(
+        (data || []).map(async (thread) => {
+          let customer = null
+          let driver = null
+
+          if (thread.customer_id) {
+            const { data: customerData } = await supabase
+              .from('customers_with_user_info')
+              .select('id, full_name, phone_no, email')
+              .eq('id', thread.customer_id)
+              .single()
+            customer = customerData
+          }
+
+          if (thread.driver_id) {
+            const { data: driverData } = await supabase
+              .from('drivers_with_user_info')
+              .select('id, full_name, phone_no, email')
+              .eq('id', thread.driver_id)
+              .single()
+            driver = driverData
+          }
+
+          return {
+            ...thread,
+            customer,
+            driver
+          }
+        })
+      )
+
       // Get unread message counts for each thread
       const threadsWithUnread = await Promise.all(
-        (data || []).map(async (thread) => {
+        threadsWithUserData.map(async (thread) => {
           const { count } = await supabase
             .from('messages')
             .select('*', { count: 'exact', head: true })
@@ -139,8 +171,11 @@ export const useCommunication = () => {
     if (!user) return
 
     try {
-      const senderType = user.id.includes('admin') ? 'admin' : 
-                        user.id.includes('driver') ? 'driver' : 'customer'
+      // Determine sender type based on user role from auth
+      const { data: userData } = await supabase.rpc('get_user_profile', { user_uuid: user.id })
+      const userRole = userData?.role || 'customer'
+      const senderType = userRole === 'admin' ? 'admin' : 
+                        userRole === 'driver' ? 'driver' : 'customer'
 
       const { error } = await supabase
         .from('messages')

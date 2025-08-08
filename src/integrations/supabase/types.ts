@@ -865,6 +865,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "communication_threads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_with_user_info"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "communication_threads_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -950,6 +957,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_saved_locations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_with_user_info"
             referencedColumns: ["id"]
           },
         ]
@@ -3139,6 +3153,38 @@ export type Database = {
           },
         ]
       }
+      customers_with_user_info: {
+        Row: {
+          created_at: string | null
+          dob: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          loyalty_points: number | null
+          phone_no: string | null
+          preferred_payment_method: string | null
+          profile_picture_url: string | null
+          referral_code: string | null
+          updated_at: string | null
+          user_status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_user_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers_with_user_info: {
         Row: {
           created_at: string | null
@@ -3333,6 +3379,10 @@ export type Database = {
           description: string
           is_active: boolean
         }[]
+      }
+      get_user_profile: {
+        Args: { user_uuid: string }
+        Returns: Json
       }
       get_user_role: {
         Args: { user_uuid: string }

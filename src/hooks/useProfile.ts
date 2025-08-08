@@ -25,68 +25,34 @@ export const useProfile = () => {
     queryFn: async () => {
       if (!user?.id) return null
 
-      // Get profile data from unified users table with role-specific joins
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select(`
-          *,
-          admins(
-            can_approve_bookings,
-            assigned_region
-          ),
-          customers(
-            loyalty_points,
-            dob,
-            preferred_payment_method,
-            referral_code
-          ),
-          drivers(
-            license_number,
-            status,
-            rating,
-            total_rides,
-            current_latitude,
-            current_longitude,
-            kyc_status,
-            joined_on
-          )
-        `)
-        .eq('id', user.id)
-        .single()
+      // Get profile data using the unified function
+      const { data: profileData, error: profileError } = await supabase
+        .rpc('get_user_profile', { user_uuid: user.id })
 
-      if (userError) throw userError
+      if (profileError) throw profileError
 
-      // Transform data to include role-specific information
+      // The function returns a JSON object with all the needed data
       const profile: UserProfile & { [key: string]: any } = {
-        id: (userData as any).id,
-        full_name: (userData as any).full_name || user.user_metadata?.full_name || 'User',
-        email: (userData as any).email || user.email || '',
-        profile_picture_url: (userData as any).profile_picture_url || user.user_metadata?.avatar_url,
-        phone_no: (userData as any).phone_no,
-        created_at: (userData as any).created_at,
-        updated_at: (userData as any).updated_at,
-        role: (userData as any).role,
-        status: (userData as any).status
+        id: profileData.id,
+        full_name: profileData.full_name || user.user_metadata?.full_name || 'User',
+        email: profileData.email || user.email || '',
+        profile_picture_url: profileData.profile_picture_url || user.user_metadata?.avatar_url,
+        phone_no: profileData.phone_no,
+        created_at: profileData.created_at,
+        updated_at: profileData.updated_at,
+        role: profileData.role,
+        status: profileData.status
       }
 
-      // Add role-specific data
-      if ((userData as any).role === 'admin' && (userData as any).admins?.[0]) {
-        profile.can_approve_bookings = (userData as any).admins[0].can_approve_bookings
-        profile.assigned_region = (userData as any).admins[0].assigned_region
-      } else if ((userData as any).role === 'customer' && (userData as any).customers?.[0]) {
-        profile.loyalty_points = (userData as any).customers[0].loyalty_points
-        profile.dob = (userData as any).customers[0].dob
-        profile.preferred_payment_method = (userData as any).customers[0].preferred_payment_method
-        profile.referral_code = (userData as any).customers[0].referral_code
-      } else if ((userData as any).role === 'driver' && (userData as any).drivers?.[0]) {
-        profile.license_number = (userData as any).drivers[0].license_number
-        profile.driver_status = (userData as any).drivers[0].status
-        profile.rating = (userData as any).drivers[0].rating
-        profile.total_rides = (userData as any).drivers[0].total_rides
-        profile.current_latitude = (userData as any).drivers[0].current_latitude
-        profile.current_longitude = (userData as any).drivers[0].current_longitude
-        profile.kyc_status = (userData as any).drivers[0].kyc_status
-        profile.joined_on = (userData as any).drivers[0].joined_on
+      // Add role-specific data from the JSON structure
+      if (profileData.admin_data) {
+        Object.assign(profile, profileData.admin_data)
+      }
+      if (profileData.customer_data) {
+        Object.assign(profile, profileData.customer_data)
+      }
+      if (profileData.driver_data) {
+        Object.assign(profile, profileData.driver_data)
       }
 
       return profile
