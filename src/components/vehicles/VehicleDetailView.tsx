@@ -58,7 +58,7 @@ export const VehicleDetailView: React.FC = () => {
       // Fetch assigned driver
       if (vehicleData.assigned_driver_id) {
         const { data: driverData, error: driverError } = await supabase
-          .from('drivers')
+          .from('drivers_with_user_info')
           .select('*')
           .eq('id', vehicleData.assigned_driver_id)
           .single()

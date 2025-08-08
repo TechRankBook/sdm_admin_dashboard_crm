@@ -7,7 +7,19 @@ import { useVehicleUtils } from '@/hooks/useVehicleUtils'
 
 interface VehicleInfoTabProps {
   vehicle: Vehicle
-  driver: Driver | null
+  driver: {
+    id: string
+    full_name: string
+    phone_no?: string
+    email?: string
+    profile_picture_url?: string
+    license_number: string
+    rating?: number
+    total_rides?: number
+    status: string
+    current_latitude?: number
+    current_longitude?: number
+  } | null
 }
 
 export const VehicleInfoTab: React.FC<VehicleInfoTabProps> = ({ vehicle, driver }) => {
@@ -74,13 +86,25 @@ export const VehicleInfoTab: React.FC<VehicleInfoTabProps> = ({ vehicle, driver 
         <CardContent className="space-y-3">
           {driver ? (
             <>
+              {driver.profile_picture_url && (
+                <div className="flex justify-center mb-4">
+                  <img 
+                    src={driver.profile_picture_url} 
+                    alt={driver.full_name}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
               <div>
                 <label className="text-sm font-medium text-gray-500">Name</label>
                 <p className="text-lg font-semibold">{driver.full_name}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Phone</label>
-                <p>{driver.phone_no}</p>
+                <p>{driver.phone_no || 'Not provided'}</p>
               </div>
               {driver.email && (
                 <div>

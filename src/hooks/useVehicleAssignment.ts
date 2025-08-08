@@ -30,7 +30,7 @@ export const useVehicleAssignment = () => {
       setError(null)
 
       const { data: vehiclesData, error: vehiclesError } = await supabase
-        .from('vehicles')
+        .from('vehicles_with_driver_details')
         .select(`
           id,
           make,
@@ -39,40 +39,33 @@ export const useVehicleAssignment = () => {
           type,
           status,
           assigned_driver_id,
-          drivers:assigned_driver_id (
-            id,
-            status,
-            rating,
-            total_rides,
-            users!inner (
-              full_name,
-              phone_no
-            )
-          )
+          driver_id,
+          driver_name,
+          driver_phone,
+          driver_status,
+          driver_rating,
+          total_rides
         `)
         .order('make', { ascending: true })
 
       if (vehiclesError) throw vehiclesError
 
-      const processedVehicles: VehicleWithDriver[] = vehiclesData.map(vehicle => {
-        const driverData = vehicle.drivers as any
-        return {
-          id: vehicle.id,
-          make: vehicle.make,
-          model: vehicle.model,
-          license_plate: vehicle.license_plate,
-          type: vehicle.type,
-          status: vehicle.status,
-          assigned_driver: driverData ? {
-            id: driverData.id,
-            full_name: driverData.users?.full_name || 'Unknown Driver',
-            phone_no: driverData.users?.phone_no,
-            status: driverData.status,
-            rating: driverData.rating,
-            total_rides: driverData.total_rides
-          } : undefined
-        }
-      })
+      const processedVehicles: VehicleWithDriver[] = vehiclesData.map(vehicle => ({
+        id: vehicle.id,
+        make: vehicle.make,
+        model: vehicle.model,
+        license_plate: vehicle.license_plate,
+        type: vehicle.type,
+        status: vehicle.status,
+        assigned_driver: vehicle.driver_id ? {
+          id: vehicle.driver_id,
+          full_name: vehicle.driver_name || 'Unknown Driver',
+          phone_no: vehicle.driver_phone,
+          status: vehicle.driver_status,
+          rating: vehicle.driver_rating,
+          total_rides: vehicle.total_rides
+        } : undefined
+      }))
 
       setVehicles(processedVehicles)
     } catch (err: any) {
