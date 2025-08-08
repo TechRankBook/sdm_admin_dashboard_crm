@@ -37,33 +37,16 @@ export const DriverDetailView: React.FC = () => {
     try {
       setLoading(true)
 
-      // Fetch driver data with user info
+      // Fetch driver data from unified view
       const { data: driverData, error: driverError } = await supabase
-        .from('drivers')
-        .select(`
-          *,
-          users!inner(
-            full_name,
-            email,
-            phone_no,
-            profile_picture_url
-          )
-        `)
+        .from('drivers_with_user_info')
+        .select('*')
         .eq('id', id)
         .single()
 
       if (driverError) throw driverError
       
-      // Transform data to match the expected Driver interface
-      const transformedDriver = {
-        ...driverData,
-        full_name: driverData.users.full_name,
-        email: driverData.users.email,
-        phone_no: driverData.users.phone_no,
-        profile_picture_url: driverData.users.profile_picture_url
-      }
-      
-      setDriver(transformedDriver)
+      setDriver(driverData)
 
       // Fetch assigned vehicle
       const { data: vehicleData, error: vehicleError } = await supabase

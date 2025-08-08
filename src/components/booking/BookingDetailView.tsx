@@ -36,7 +36,6 @@ export const BookingDetailView: React.FC = () => {
           *,
           service_type:service_types(*),
           rental_package:rental_packages(*),
-          driver:drivers(*, users!inner(full_name, phone_no, email, profile_picture_url)),
           vehicle:vehicles(*),
           stops:booking_stops(*),
           confirmations:booking_confirmations(*),
@@ -48,25 +47,25 @@ export const BookingDetailView: React.FC = () => {
 
       if (bookingError) throw bookingError
 
-      // Transform driver data to flatten user fields if driver exists
-      if (bookingData.driver && bookingData.driver.users) {
-        const userData = (bookingData.driver.users as any)
-        bookingData.driver = {
-          ...bookingData.driver,
-          full_name: userData?.full_name || '',
-          email: userData?.email || '',
-          phone_no: userData?.phone_no || '',
-          profile_picture_url: userData?.profile_picture_url || '',
-          users: undefined // Remove the nested object
+      setBooking(bookingData)
+
+      // Fetch driver data separately if driver_id exists
+      if (bookingData.driver_id) {
+        const { data: driverData, error: driverError } = await supabase
+          .from('drivers_with_user_info')
+          .select('*')
+          .eq('id', bookingData.driver_id)
+          .single()
+        
+        if (!driverError) {
+          bookingData.driver = driverData
         }
       }
-
-      setBooking(bookingData)
 
       // Fetch customer details if user_id exists
       if (bookingData.user_id) {
         const { data: customerData, error: customerError } = await supabase
-          .from('customers')
+          .from('users')
           .select('*')
           .eq('id', bookingData.user_id)
           .single()

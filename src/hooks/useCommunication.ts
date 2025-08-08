@@ -22,8 +22,6 @@ export const useCommunication = () => {
         .from('communication_threads')
         .select(`
           *,
-          customer:customers(id, full_name, phone_no, email),
-          driver:drivers(id, full_name, phone_no, email),
           booking:bookings(id, pickup_address, dropoff_address, status)
         `)
         .order('last_message_at', { ascending: false, nullsFirst: false })
@@ -79,21 +77,21 @@ export const useCommunication = () => {
           
           if (message.sender_type === 'admin') {
             const { data: admin } = await supabase
-              .from('admins')
+              .from('admins_with_user_info')
               .select('full_name')
               .eq('id', message.sender_id)
               .single()
             senderName = admin?.full_name || 'Admin'
           } else if (message.sender_type === 'customer') {
             const { data: customer } = await supabase
-              .from('customers')
+              .from('users')
               .select('full_name')
               .eq('id', message.sender_id)
               .single()
             senderName = customer?.full_name || 'Customer'
           } else if (message.sender_type === 'driver') {
             const { data: driver } = await supabase
-              .from('drivers')
+              .from('drivers_with_user_info')
               .select('full_name')
               .eq('id', message.sender_id)
               .single()

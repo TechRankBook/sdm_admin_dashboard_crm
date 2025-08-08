@@ -39,20 +39,18 @@ export const useRealtimeTracking = () => {
     try {
       setError(null)
       
-      // Fetch drivers with user data joined
+      // Fetch drivers with user data from unified view
       const { data: driversData, error: driversError } = await supabase
-        .from('drivers')
+        .from('drivers_with_user_info')
         .select(`
           id,
           status,
           current_latitude,
           current_longitude,
           rating,
-          users!inner (
-            full_name,
-            phone_no,
-            profile_picture_url
-          )
+          full_name,
+          phone_no,
+          profile_picture_url
         `)
         .eq('status', 'active')
 
@@ -86,16 +84,15 @@ export const useRealtimeTracking = () => {
       // Combine driver and booking data
       const combinedData: TrackingData[] = driversData.map(driver => {
         const driverBooking = bookingsData.find(booking => booking.driver_id === driver.id)
-        const userData = (driver.users as any)
         
         return {
           driver: {
             id: driver.id,
-            full_name: userData?.full_name || 'Unknown Driver',
+            full_name: driver.full_name || 'Unknown Driver',
             status: driver.status,
             current_latitude: driver.current_latitude,
             current_longitude: driver.current_longitude,
-            phone_no: userData?.phone_no || '',
+            phone_no: driver.phone_no || '',
             rating: driver.rating
           },
           booking: driverBooking ? {

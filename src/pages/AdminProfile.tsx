@@ -41,16 +41,10 @@ export const AdminProfile: React.FC = () => {
 
   const fetchAdminData = async () => {
     try {
-      // Fetch from unified users table with admin-specific data
+      // Fetch from unified admin view
       const { data, error } = await supabase
-        .from('users')
-        .select(`
-          *,
-          admins(
-            can_approve_bookings,
-            assigned_region
-          )
-        `)
+        .from('admins_with_user_info')
+        .select('*')
         .eq('id', user?.id)
         .single()
 
@@ -58,15 +52,15 @@ export const AdminProfile: React.FC = () => {
       
       // Transform data to match existing interface
       const transformedData = {
-        id: (data as any).id,
-        full_name: (data as any).full_name,
-        email: (data as any).email,
-        phone_no: (data as any).phone_no,
-        profile_picture_url: (data as any).profile_picture_url,
-        created_at: (data as any).created_at,
-        updated_at: (data as any).updated_at,
-        can_approve_bookings: (data as any).admins?.[0]?.can_approve_bookings || true,
-        assigned_region: (data as any).admins?.[0]?.assigned_region || ''
+        id: data.id,
+        full_name: data.full_name,
+        email: data.email,
+        phone_no: data.phone_no,
+        profile_picture_url: data.profile_picture_url,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        can_approve_bookings: data.can_approve_bookings || true,
+        assigned_region: data.assigned_region || ''
       }
       
       setAdminData(transformedData)
