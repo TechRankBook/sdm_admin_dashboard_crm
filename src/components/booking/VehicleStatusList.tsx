@@ -73,89 +73,81 @@ export const VehicleStatusList: React.FC<VehicleStatusListProps> = ({ onRefresh 
     try {
       setLoading(true)
       
-      // Fetch vehicles with their assigned drivers
-      const { data: vehiclesData, error: vehiclesError } = await supabase
-        .from('vehicles')
+      // Use the working vehicles_with_driver_details view like the dropdown does
+      const { data: vehiclesViewData, error: vehiclesError } = await supabase
+        .from('vehicles_with_driver_details')
         .select(`
           id,
           make,
           model,
           license_plate,
           type,
-          status,
+          vehicle_status,
           assigned_driver_id,
-          drivers:drivers!vehicles_assigned_driver_id_fkey (
-            id,
-            status,
-            rating,
-            total_rides,
-            users!inner (
-              full_name,
-              phone_no
-            )
-          )
+          driver_id,
+          driver_name,
+          driver_phone,
+          driver_status,
+          rating,
+          total_rides
         `)
         .order('make', { ascending: true })
+      
+      if (vehiclesError) {
+        throw vehiclesError
+      }
 
-      if (vehiclesError) throw vehiclesError
+      // Process vehicles data from the view
+      const processedVehicles: VehicleWithDriver[] = vehiclesViewData.map(vehicle => ({
+        id: vehicle.id,
+        make: vehicle.make,
+        model: vehicle.model,
+        license_plate: vehicle.license_plate,
+        type: vehicle.type,
+        status: vehicle.vehicle_status,
+        assigned_driver: vehicle.driver_id ? {
+          id: vehicle.driver_id,
+          full_name: vehicle.driver_name || 'Unknown Driver',
+          phone_no: vehicle.driver_phone,
+          status: vehicle.driver_status,
+          rating: vehicle.rating,
+          total_rides: vehicle.total_rides
+        } : undefined
+      }))
 
-      // Process vehicles data
-      const processedVehicles: VehicleWithDriver[] = vehiclesData.map(vehicle => {
-        const driverData = vehicle.drivers as any
-        return {
-          id: vehicle.id,
-          make: vehicle.make,
-          model: vehicle.model,
-          license_plate: vehicle.license_plate,
-          type: vehicle.type,
-          status: vehicle.status,
-          assigned_driver: driverData ? {
-            id: driverData.id,
-            full_name: driverData.users?.full_name || 'Unknown Driver',
-            phone_no: driverData.users?.phone_no,
-            status: driverData.status,
-            rating: driverData.rating,
-            total_rides: driverData.total_rides
-          } : undefined
-        }
-      })
+      // Get list of assigned driver IDs for filtering unassigned drivers
+      const assignedDriverIds = vehiclesViewData
+        .filter(v => v.driver_id)
+        .map(v => v.driver_id)
 
       // Fetch unassigned drivers
       const { data: driversData, error: driversError } = await supabase
-        .from('drivers')
-        .select(`
-          id,
-          status,
-          rating,
-          total_rides,
-          users!inner (
-            full_name,
-            phone_no
-          )
-        `)
-        .not('id', 'in', `(${vehiclesData.filter(v => v.assigned_driver_id).map(v => v.assigned_driver_id).join(',') || 'null'})`)
-        .order('users(full_name)', { ascending: true })
+        .from('drivers_with_user_info')
+        .select('*')
+        .order('full_name', { ascending: true })
 
-      if (driversError) throw driversError
+      if (driversError) {
+        throw driversError
+      }
 
-      const processedUnassignedDrivers: UnassignedDriver[] = driversData.map(driver => {
-        const userData = driver.users as any
-        return {
+      // Filter out assigned drivers from the results
+      const processedUnassignedDrivers: UnassignedDriver[] = driversData
+        .filter(driver => !assignedDriverIds.includes(driver.id))
+        .map(driver => ({
           id: driver.id,
-          full_name: userData?.full_name || 'Unknown Driver',
-          phone_no: userData?.phone_no,
+          full_name: driver.full_name || 'Unknown Driver',
+          phone_no: driver.phone_no,
           status: driver.status,
           rating: driver.rating,
           total_rides: driver.total_rides
-        }
-      })
+        }))
 
       setVehicles(processedVehicles)
       setUnassignedDrivers(processedUnassignedDrivers)
       setLastUpdate(new Date())
       
       if (onRefresh) onRefresh()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching vehicle and driver status:', error)
       toast.error('Failed to load vehicle and driver status')
     } finally {
@@ -200,27 +192,27 @@ export const VehicleStatusList: React.FC<VehicleStatusListProps> = ({ onRefresh 
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <Car className="w-5 h-5" />
-            <span>Fleet Status</span>
-          </CardTitle>
-          <div className="flex items-center space-x-2">
-            <span className="text-xs text-muted-foreground">
-              Updated: {lastUpdate.toLocaleTimeString()}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchVehicleAndDriverStatus}
-              disabled={loading}
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <Car className="w-5 h-5" />
+              <span>Fleet Status</span>
+            </CardTitle>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-muted-foreground">
+                Updated: {lastUpdate.toLocaleTimeString()}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchVehicleAndDriverStatus}
+                disabled={loading}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
       <CardContent>
         <Tabs defaultValue="vehicles" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
