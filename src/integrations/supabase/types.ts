@@ -280,6 +280,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "booking_confirmations_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins_with_user_info"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "booking_confirmations_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: true
@@ -649,6 +656,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_with_user_info"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_dropoff_location_id_fkey"
             columns: ["dropoff_location_id"]
             isOneToOne: false
@@ -816,6 +830,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "communication_threads_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins_with_user_info"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "communication_threads_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
@@ -848,6 +869,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_with_user_info"
             referencedColumns: ["id"]
           },
         ]
@@ -1020,6 +1048,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_maintenance_logs_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_with_user_info"
             referencedColumns: ["id"]
           },
           {
@@ -2802,7 +2837,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_vehicles_assigned_driver"
+            foreignKeyName: "vehicles_assigned_driver_fkey"
             columns: ["assigned_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
@@ -2812,7 +2847,7 @@ export type Database = {
             foreignKeyName: "vehicles_assigned_driver_fkey"
             columns: ["assigned_driver_id"]
             isOneToOne: false
-            referencedRelation: "drivers"
+            referencedRelation: "drivers_with_user_info"
             referencedColumns: ["id"]
           },
           {
@@ -2820,6 +2855,13 @@ export type Database = {
             columns: ["assigned_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_with_user_info"
             referencedColumns: ["id"]
           },
           {
@@ -3066,6 +3108,75 @@ export type Database = {
           vehicle_details: string | null
         }
         Relationships: []
+      }
+      admins_with_user_info: {
+        Row: {
+          assigned_region: string | null
+          can_approve_bookings: boolean | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          phone_no: string | null
+          profile_picture_url: string | null
+          updated_at: string | null
+          user_status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admins_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admins_user_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers_with_user_info: {
+        Row: {
+          created_at: string | null
+          current_latitude: number | null
+          current_longitude: number | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          id_proof_document_url: string | null
+          joined_on: string | null
+          kyc_status: string | null
+          license_document_url: string | null
+          license_number: string | null
+          phone_no: string | null
+          profile_picture_url: string | null
+          rating: number | null
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["driver_status_enum"] | null
+          total_rides: number | null
+          updated_at: string | null
+          user_status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_user_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

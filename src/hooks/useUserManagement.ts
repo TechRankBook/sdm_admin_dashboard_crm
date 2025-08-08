@@ -13,18 +13,18 @@ export const useUserManagement = () => {
   const fetchUsers = async (filters?: UserFilter) => {
     setLoading(true)
     try {
-      // Query from unified users table with role-specific data
+      // Query from unified users table with role-specific data using specific foreign key references
       let baseQuery = supabase
         .from('users')
         .select(`
           *,
-          drivers(
+          drivers!drivers_user_id_fkey(
             total_rides,
             rating,
             status,
             license_number
           ),
-          customers(
+          customers!customers_user_id_fkey(
             loyalty_points,
             dob,
             preferred_payment_method

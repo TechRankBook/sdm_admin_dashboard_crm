@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/lib/supabase'
 import { CalendarDays, Car, Users, DollarSign, Clock, AlertTriangle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { SystemHealthDashboard } from '@/components/SystemHealthDashboard'
 
 interface DashboardStats {
   totalBookingsToday: number
@@ -251,6 +252,9 @@ export const Dashboard: React.FC = () => {
           </Card>
         ))}
       </div>
+
+      {/* System Health Dashboard */}
+      <SystemHealthDashboard />
 
       {/* Alerts Section */}
       <Card>

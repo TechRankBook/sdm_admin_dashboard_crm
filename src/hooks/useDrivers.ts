@@ -10,35 +10,15 @@ export const useDrivers = () => {
 
   const fetchDrivers = async () => {
     try {
+      // Use the view to avoid relationship ambiguity
       const { data, error } = await supabase
-        .from('drivers')
-        .select(`
-          *,
-          users!inner (
-            full_name,
-            email,
-            phone_no,
-            profile_picture_url
-          )
-        `)
+        .from('drivers_with_user_info')
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (error) throw error
       
-      // Transform the data to flatten user fields
-      const transformedData = (data || []).map(driver => {
-        const userData = (driver.users as any)
-        return {
-          ...driver,
-          full_name: userData?.full_name || '',
-          email: userData?.email || '',
-          phone_no: userData?.phone_no || '',
-          profile_picture_url: userData?.profile_picture_url || '',
-          users: undefined // Remove the nested object
-        }
-      })
-      
-      setDrivers(transformedData)
+      setDrivers(data || [])
     } catch (error) {
       console.error('Error fetching drivers:', error)
       toast.error('Failed to fetch drivers')
