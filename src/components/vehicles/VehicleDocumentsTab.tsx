@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Upload, Eye, Edit, Check, AlertTriangle, Calendar } from 'lucide-react'
+import { FileText, Upload, Eye, Edit, Check, AlertTriangle, Calendar, Trash2 } from 'lucide-react'
 import { VehicleDocument } from '@/types/database'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -29,6 +29,8 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
   documents, 
   onDocumentsUpdated 
 }) => {
+  // Debug: Log the received documents
+  console.log('VehicleDocumentsTab received documents:', documents)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedType, setSelectedType] = useState('')
@@ -36,6 +38,7 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
   const [issueDate, setIssueDate] = useState('')
   const [expiryDate, setExpiryDate] = useState('')
   const [notes, setNotes] = useState('')
+  const [editingDocument, setEditingDocument] = useState<VehicleDocument | null>(null)
 
   const getDocumentStatusBadge = (doc: VehicleDocument) => {
     if (!doc.expiry_date) {
@@ -128,6 +131,123 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
     }
   }
 
+  const handleEdit = (doc: VehicleDocument) => {
+    setEditingDocument(doc)
+    setSelectedType(doc.document_type)
+    setIssueDate(doc.issue_date ? new Date(doc.issue_date).toISOString().split('T')[0] : '')
+    setExpiryDate(doc.expiry_date ? new Date(doc.expiry_date).toISOString().split('T')[0] : '')
+    setNotes(doc.notes || '')
+    setShowUploadModal(true)
+  }
+
+  const handleDelete = async (doc: VehicleDocument) => {
+    if (!confirm('Are you sure you want to delete this document?')) return
+
+    try {
+      // Delete from storage if URL exists
+      if (doc.document_url) {
+        const fileName = doc.document_url.split('/').pop()
+        if (fileName) {
+          await supabase.storage
+            .from('vehicle-documents')
+            .remove([`${vehicleId}/${fileName}`])
+        }
+      }
+
+      // Delete from database
+      const { error } = await supabase
+        .from('vehicle_documents')
+        .delete()
+        .eq('id', doc.id)
+
+      if (error) throw error
+
+      toast.success('Document deleted successfully')
+      onDocumentsUpdated()
+
+    } catch (error) {
+      console.error('Error deleting document:', error)
+      toast.error('Failed to delete document')
+    }
+  }
+
+  const handleUpdate = async () => {
+    if (!editingDocument) return
+
+    setIsUploading(true)
+
+    try {
+      let documentUrl = editingDocument.document_url
+
+      // If a new file is selected, upload it
+      if (selectedFile) {
+        // Delete old file
+        if (editingDocument.document_url) {
+          const oldFileName = editingDocument.document_url.split('/').pop()
+          if (oldFileName) {
+            await supabase.storage
+              .from('vehicle-documents')
+              .remove([`${vehicleId}/${oldFileName}`])
+          }
+        }
+
+        // Upload new file
+        const fileName = `${vehicleId}/${selectedType}-${Date.now()}.${selectedFile.name.split('.').pop()}`
+        const { error: uploadError } = await supabase.storage
+          .from('vehicle-documents')
+          .upload(fileName, selectedFile)
+
+        if (uploadError) throw uploadError
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('vehicle-documents')
+          .getPublicUrl(fileName)
+
+        documentUrl = publicUrl
+      }
+
+      // Update document record
+      const { error: dbError } = await supabase
+        .from('vehicle_documents')
+        .update({
+          document_type: selectedType as any,
+          document_url: documentUrl,
+          issue_date: issueDate || null,
+          expiry_date: expiryDate || null,
+          notes: notes || null,
+        })
+        .eq('id', editingDocument.id)
+
+      if (dbError) throw dbError
+
+      toast.success('Document updated successfully')
+      setShowUploadModal(false)
+      setEditingDocument(null)
+      setSelectedFile(null)
+      setSelectedType('')
+      setIssueDate('')
+      setExpiryDate('')
+      setNotes('')
+      onDocumentsUpdated()
+
+    } catch (error) {
+      console.error('Error updating document:', error)
+      toast.error('Failed to update document')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const resetModal = () => {
+    setShowUploadModal(false)
+    setEditingDocument(null)
+    setSelectedFile(null)
+    setSelectedType('')
+    setIssueDate('')
+    setExpiryDate('')
+    setNotes('')
+  }
+
   const groupedDocuments = documentTypes.map(type => ({
     ...type,
     document: documents.find(doc => doc.document_type === type.value)
@@ -212,9 +332,25 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
                     <Button 
                       variant="outline" 
                       size="sm"
+                      onClick={() => handleEdit(document)}
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
                       onClick={() => toggleVerification(document)}
                     >
                       {document.verified ? 'Unverify' : 'Verify'}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDelete(document)}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </>
@@ -244,7 +380,7 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
       <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Upload Document</DialogTitle>
+            <DialogTitle>{editingDocument ? 'Edit Document' : 'Upload Document'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -305,11 +441,14 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
             </div>
 
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+              <Button variant="outline" onClick={resetModal}>
                 Cancel
               </Button>
-              <Button onClick={handleUpload} disabled={isUploading}>
-                {isUploading ? 'Uploading...' : 'Upload'}
+              <Button 
+                onClick={editingDocument ? handleUpdate : handleUpload} 
+                disabled={isUploading || (!editingDocument && (!selectedFile || !selectedType))}
+              >
+                {isUploading ? (editingDocument ? 'Updating...' : 'Uploading...') : (editingDocument ? 'Update' : 'Upload')}
               </Button>
             </div>
           </div>

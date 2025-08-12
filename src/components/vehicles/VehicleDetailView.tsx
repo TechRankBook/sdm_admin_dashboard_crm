@@ -73,7 +73,12 @@ export const VehicleDetailView: React.FC = () => {
         .eq('vehicle_id', id)
         .order('created_at', { ascending: false })
 
-      if (!documentsError) setDocuments(documentsData || [])
+      if (documentsError) {
+        console.error('Error fetching vehicle documents:', documentsError)
+      } else {
+        console.log('Fetched vehicle documents:', documentsData)
+        setDocuments(documentsData || [])
+      }
 
       // Fetch service logs
       const { data: serviceData, error: serviceError } = await supabase
