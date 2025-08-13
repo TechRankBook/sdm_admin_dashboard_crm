@@ -290,7 +290,7 @@ export const EditDriverModal: React.FC<EditDriverModalProps> = ({ open, onOpenCh
                       <SelectContent>
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="on_ride">On Ride</SelectItem>
+                        <SelectItem value="on_ride">On Ride</SelectItem> 
                         <SelectItem value="suspended">Suspended</SelectItem>
                       </SelectContent>
                     </Select>

@@ -16,7 +16,7 @@ const pricingRuleSchema = z.object({
   vehicle_type: z.string().min(1, 'Vehicle type is required'),
   base_fare: z.string().min(1, 'Base fare is required'),
   per_km_rate: z.string().min(1, 'Per km rate is required'),
-  per_minute_rate: z.string().optional(),
+  per_minute_rate: z.string().min(1, 'Per minute rate is required'),
   minimum_fare: z.string().min(1, 'Minimum fare is required'),
   surge_multiplier: z.string().min(1, 'Surge multiplier is required'),
   cancellation_fee: z.string().optional(),
@@ -64,7 +64,7 @@ export const EditPricingRuleModal: React.FC<EditPricingRuleModalProps> = ({
         vehicle_type: rule.vehicle_type,
         base_fare: rule.base_fare.toString(),
         per_km_rate: rule.per_km_rate.toString(),
-        per_minute_rate: rule.per_minute_rate?.toString() || '',
+        per_minute_rate: rule.per_minute_rate?.toString() || '2.0',
         minimum_fare: rule.minimum_fare.toString(),
         surge_multiplier: rule.surge_multiplier.toString(),
         cancellation_fee: rule.cancellation_fee.toString(),
@@ -86,7 +86,7 @@ export const EditPricingRuleModal: React.FC<EditPricingRuleModalProps> = ({
           vehicle_type: data.vehicle_type,
           base_fare: parseFloat(data.base_fare),
           per_km_rate: parseFloat(data.per_km_rate),
-          per_minute_rate: data.per_minute_rate ? parseFloat(data.per_minute_rate) : null,
+          per_minute_rate: parseFloat(data.per_minute_rate),
           minimum_fare: parseFloat(data.minimum_fare),
           surge_multiplier: parseFloat(data.surge_multiplier),
           cancellation_fee: data.cancellation_fee ? parseFloat(data.cancellation_fee) : 0,
@@ -162,8 +162,8 @@ export const EditPricingRuleModal: React.FC<EditPricingRuleModalProps> = ({
                       <SelectContent>
                         <SelectItem value="sedan">Sedan</SelectItem>
                         <SelectItem value="suv">SUV</SelectItem>
-                        <SelectItem value="bike">Bike</SelectItem>
-                        <SelectItem value="luxury">Luxury</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="Tempo Traveller">Tempo Traveller</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

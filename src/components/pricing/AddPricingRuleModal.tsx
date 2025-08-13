@@ -16,7 +16,7 @@ const pricingRuleSchema = z.object({
   vehicle_type: z.string().min(1, 'Vehicle type is required'),
   base_fare: z.string().min(1, 'Base fare is required'),
   per_km_rate: z.string().min(1, 'Per km rate is required'),
-  per_minute_rate: z.string().optional(),
+  per_minute_rate: z.string().min(1, 'Per minute rate is required'),
   minimum_fare: z.string().min(1, 'Minimum fare is required'),
   surge_multiplier: z.string().min(1, 'Surge multiplier is required'),
   cancellation_fee: z.string().optional(),
@@ -48,7 +48,7 @@ export const AddPricingRuleModal: React.FC<AddPricingRuleModalProps> = ({
       vehicle_type: '',
       base_fare: '',
       per_km_rate: '',
-      per_minute_rate: '',
+      per_minute_rate: '2.0',
       minimum_fare: '',
       surge_multiplier: '1.0',
       cancellation_fee: '0',
@@ -61,31 +61,38 @@ export const AddPricingRuleModal: React.FC<AddPricingRuleModalProps> = ({
   const onSubmit = async (data: PricingRuleFormData) => {
     setLoading(true)
     try {
-      const { error } = await supabase
+      const insertData = {
+        service_type_id: serviceType.id,
+        vehicle_type: data.vehicle_type,
+        base_fare: parseFloat(data.base_fare),
+        per_km_rate: parseFloat(data.per_km_rate),
+        per_minute_rate: parseFloat(data.per_minute_rate),
+        minimum_fare: parseFloat(data.minimum_fare),
+        surge_multiplier: parseFloat(data.surge_multiplier),
+        cancellation_fee: data.cancellation_fee ? parseFloat(data.cancellation_fee) : 0,
+        no_show_fee: data.no_show_fee ? parseFloat(data.no_show_fee) : 0,
+        waiting_charges_per_minute: data.waiting_charges_per_minute ? parseFloat(data.waiting_charges_per_minute) : 0,
+        free_waiting_time_minutes: data.free_waiting_time_minutes ? parseInt(data.free_waiting_time_minutes) : 5,
+        is_active: true
+      }
+
+      console.log('📋 Inserting pricing rule:', insertData)
+      console.log('🔍 Service Type:', serviceType)
+
+      const { data: result, error } = await supabase
         .from('pricing_rules')
-        .insert({
-          service_type_id: serviceType.id,
-          vehicle_type: data.vehicle_type,
-          base_fare: parseFloat(data.base_fare),
-          per_km_rate: parseFloat(data.per_km_rate),
-          per_minute_rate: data.per_minute_rate ? parseFloat(data.per_minute_rate) : null,
-          minimum_fare: parseFloat(data.minimum_fare),
-          surge_multiplier: parseFloat(data.surge_multiplier),
-          cancellation_fee: data.cancellation_fee ? parseFloat(data.cancellation_fee) : 0,
-          no_show_fee: data.no_show_fee ? parseFloat(data.no_show_fee) : 0,
-          waiting_charges_per_minute: data.waiting_charges_per_minute ? parseFloat(data.waiting_charges_per_minute) : 0,
-          free_waiting_time_minutes: data.free_waiting_time_minutes ? parseInt(data.free_waiting_time_minutes) : 5,
-          is_active: true
-        })
+        .insert(insertData)
+        .select()
 
       if (error) throw error
 
+      console.log('✅ Pricing rule inserted successfully:', result)
       toast.success('Pricing rule added successfully')
       form.reset()
       onOpenChange(false)
       onSuccess()
     } catch (error) {
-      console.error('Error adding pricing rule:', error)
+      console.error('❌ Error adding pricing rule:', error)
       toast.error('Failed to add pricing rule')
     } finally {
       setLoading(false)
@@ -120,8 +127,8 @@ export const AddPricingRuleModal: React.FC<AddPricingRuleModalProps> = ({
                       <SelectContent>
                         <SelectItem value="sedan">Sedan</SelectItem>
                         <SelectItem value="suv">SUV</SelectItem>
-                        <SelectItem value="bike">Bike</SelectItem>
-                        <SelectItem value="luxury">Luxury</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="Tempo Traveller">Tempo Traveller</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -157,21 +164,19 @@ export const AddPricingRuleModal: React.FC<AddPricingRuleModalProps> = ({
                 )}
               />
 
-              {serviceType.name === 'city_ride' && (
-                <FormField
-                  control={form.control}
-                  name="per_minute_rate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Per Minute Rate (₹)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" placeholder="2.00" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={form.control}
+                name="per_minute_rate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Per Minute Rate (₹)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="2.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

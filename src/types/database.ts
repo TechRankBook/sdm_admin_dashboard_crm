@@ -147,6 +147,7 @@ export interface PricingRule {
 
 export interface RentalPackage {
   id: string
+  service_type_id: string
   name: string
   vehicle_type: string
   duration_hours: number

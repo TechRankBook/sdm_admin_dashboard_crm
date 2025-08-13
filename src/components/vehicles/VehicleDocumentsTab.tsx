@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Upload, Eye, Edit, Check, AlertTriangle, Calendar } from 'lucide-react'
+import { FileText, Upload, Eye, Edit, Check, Trash2 } from 'lucide-react'
 import { VehicleDocument } from '@/types/database'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -36,6 +36,7 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
   const [issueDate, setIssueDate] = useState('')
   const [expiryDate, setExpiryDate] = useState('')
   const [notes, setNotes] = useState('')
+  const [editingDoc, setEditingDoc] = useState<VehicleDocument | null>(null)
 
   const getDocumentStatusBadge = (doc: VehicleDocument) => {
     if (!doc.expiry_date) {
@@ -55,6 +56,29 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
     } else {
       return <Badge variant="outline" className="border-green-200 text-green-800">Valid</Badge>
     }
+  }
+
+  const extractStoragePath = (url?: string | null) => {
+    if (!url) return null
+    try {
+      const u = new URL(url)
+      const parts = u.pathname.split('/')
+      const idx = parts.findIndex(p => p === 'vehicle-documents')
+      if (idx === -1) return null
+      return parts.slice(idx + 1).join('/')
+    } catch {
+      return null
+    }
+  }
+
+  const resetUploadState = () => {
+    setShowUploadModal(false)
+    setSelectedFile(null)
+    setSelectedType('')
+    setIssueDate('')
+    setExpiryDate('')
+    setNotes('')
+    setEditingDoc(null)
   }
 
   const handleUpload = async () => {
@@ -78,28 +102,61 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
         .from('vehicle-documents')
         .getPublicUrl(fileName)
 
-      // Save document record
-      const { error: dbError } = await supabase
-        .from('vehicle_documents')
-        .insert({
-          vehicle_id: vehicleId,
-          document_type: selectedType as any,
-          document_url: publicUrl,
-          issue_date: issueDate || null,
-          expiry_date: expiryDate || null,
-          notes: notes || null,
-          verified: false
-        })
+      // Check if we're updating a legacy document
+      const isLegacyDoc = editingDoc && editingDoc.id && editingDoc.id.startsWith('legacy-')
 
-      if (dbError) throw dbError
+      if (isLegacyDoc) {
+        // Update the vehicles table for legacy documents and also create a new document record
+        const updateField = `${selectedType}_document_url`
+        const { error: legacyUpdateErr } = await supabase
+          .from('vehicles')
+          .update({ [updateField]: publicUrl })
+          .eq('id', vehicleId)
+        if (legacyUpdateErr) throw legacyUpdateErr
 
-      toast.success('Document uploaded successfully')
-      setShowUploadModal(false)
-      setSelectedFile(null)
-      setSelectedType('')
-      setIssueDate('')
-      setExpiryDate('')
-      setNotes('')
+        // Also create a new document record in the dedicated table
+        const { error: newDocErr } = await supabase
+          .from('vehicle_documents')
+          .insert({
+            vehicle_id: vehicleId,
+            document_type: selectedType as any,
+            document_url: publicUrl,
+            issue_date: issueDate || null,
+            expiry_date: expiryDate || null,
+            notes: notes || null,
+            verified: false
+          })
+        if (newDocErr) throw newDocErr
+      } else if (editingDoc && editingDoc.id && !editingDoc.id.startsWith('legacy-')) {
+        // Update existing document in the dedicated table
+        const { error: updateErr } = await supabase
+          .from('vehicle_documents')
+          .update({
+            document_url: publicUrl,
+            issue_date: issueDate || null,
+            expiry_date: expiryDate || null,
+            notes: notes || null,
+          })
+          .eq('id', editingDoc.id)
+        if (updateErr) throw updateErr
+      } else {
+        // Create new document record
+        const { error: dbError } = await supabase
+          .from('vehicle_documents')
+          .insert({
+            vehicle_id: vehicleId,
+            document_type: selectedType as any,
+            document_url: publicUrl,
+            issue_date: issueDate || null,
+            expiry_date: expiryDate || null,
+            notes: notes || null,
+            verified: false
+          })
+        if (dbError) throw dbError
+      }
+
+      toast.success(editingDoc ? 'Document replaced successfully' : 'Document uploaded successfully')
+      resetUploadState()
       onDocumentsUpdated()
 
     } catch (error) {
@@ -110,7 +167,63 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
     }
   }
 
+  const handleDelete = async (doc: VehicleDocument) => {
+    try {
+      // Attempt to delete storage file first (best-effort)
+      const path = extractStoragePath(doc.document_url)
+      if (path) {
+        const { error: rmErr } = await supabase.storage
+          .from('vehicle-documents')
+          .remove([path])
+        if (rmErr) console.warn('Storage delete warning:', rmErr.message)
+      }
+
+      const isLegacyDoc = doc.id && doc.id.startsWith('legacy-')
+
+      if (isLegacyDoc) {
+        // For legacy documents, clear the URL from the vehicles table
+        const updateField = `${doc.document_type}_document_url`
+        const { error } = await supabase
+          .from('vehicles')
+          .update({ [updateField]: null })
+          .eq('id', vehicleId)
+        if (error) throw error
+      } else if (doc.id) {
+        // For dedicated table documents, delete the record
+        const { error } = await supabase
+          .from('vehicle_documents')
+          .delete()
+          .eq('id', doc.id)
+        if (error) throw error
+      }
+
+      toast.success('Document deleted')
+      onDocumentsUpdated()
+    } catch (e) {
+      console.error('Delete document error:', e)
+      toast.error('Failed to delete document')
+    }
+  }
+
+  const startReplace = (docType: string, doc?: VehicleDocument | null) => {
+    setSelectedType(docType)
+    setSelectedFile(null) // Reset file selection
+    if (doc) {
+      setEditingDoc(doc)
+      setIssueDate(doc.issue_date || '')
+      setExpiryDate(doc.expiry_date || '')
+      setNotes(doc.notes || '')
+    } else {
+      setEditingDoc(null)
+      setIssueDate('')
+      setExpiryDate('')
+      setNotes('')
+    }
+    setShowUploadModal(true)
+  }
+
   const toggleVerification = async (doc: VehicleDocument) => {
+    if (!doc.id) return // do not toggle for legacy docs
     try {
       const { error } = await supabase
         .from('vehicle_documents')
@@ -138,7 +251,7 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Vehicle Documents</h2>
-        <Button onClick={() => setShowUploadModal(true)}>
+        <Button onClick={() => { setEditingDoc(null); setSelectedType(''); setShowUploadModal(true) }}>
           <Upload className="w-4 h-4 mr-2" />
           Upload Document
         </Button>
@@ -212,10 +325,28 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => toggleVerification(document)}
+                      onClick={() => startReplace(value, document)}
                     >
-                      {document.verified ? 'Unverify' : 'Verify'}
+                      <Edit className="w-4 h-4 mr-1" />
+                      Replace
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDelete(document)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </Button>
+                    {!document.id?.startsWith('legacy-') && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toggleVerification(document)}
+                      >
+                        {document.verified ? 'Unverify' : 'Verify'}
+                      </Button>
+                    )}
                   </div>
                 </>
               ) : (
@@ -244,7 +375,9 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
       <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Upload Document</DialogTitle>
+            <DialogTitle>
+              {editingDoc ? 'Replace Document' : 'Upload Document'}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -309,7 +442,7 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
                 Cancel
               </Button>
               <Button onClick={handleUpload} disabled={isUploading}>
-                {isUploading ? 'Uploading...' : 'Upload'}
+                {isUploading ? 'Uploading...' : (editingDoc ? 'Replace' : 'Upload')}
               </Button>
             </div>
           </div>

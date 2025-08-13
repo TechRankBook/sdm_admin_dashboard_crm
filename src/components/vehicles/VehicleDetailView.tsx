@@ -66,14 +66,64 @@ export const VehicleDetailView: React.FC = () => {
         if (!driverError) setDriver(driverData)
       }
 
-      // Fetch documents
+      // Fetch documents from vehicle_documents table
       const { data: documentsData, error: documentsError } = await supabase
         .from('vehicle_documents')
         .select('*')
         .eq('vehicle_id', id)
         .order('created_at', { ascending: false })
 
-      if (!documentsError) setDocuments(documentsData || [])
+      // Create legacy documents from vehicle table URLs
+      const legacyDocuments: VehicleDocument[] = []
+      
+      if (vehicleData.insurance_document_url) {
+        legacyDocuments.push({
+          id: `legacy-insurance-${vehicleData.id}`,
+          vehicle_id: vehicleData.id,
+          document_type: 'insurance',
+          document_url: vehicleData.insurance_document_url,
+          verified: false,
+          created_at: vehicleData.created_at,
+          updated_at: vehicleData.updated_at
+        })
+      }
+      
+      if (vehicleData.registration_document_url) {
+        legacyDocuments.push({
+          id: `legacy-registration-${vehicleData.id}`,
+          vehicle_id: vehicleData.id,
+          document_type: 'registration',
+          document_url: vehicleData.registration_document_url,
+          verified: false,
+          created_at: vehicleData.created_at,
+          updated_at: vehicleData.updated_at
+        })
+      }
+      
+      if (vehicleData.pollution_certificate_url) {
+        legacyDocuments.push({
+          id: `legacy-pollution_certificate-${vehicleData.id}`,
+          vehicle_id: vehicleData.id,
+          document_type: 'pollution_certificate',
+          document_url: vehicleData.pollution_certificate_url,
+          verified: false,
+          created_at: vehicleData.created_at,
+          updated_at: vehicleData.updated_at
+        })
+      }
+
+      // Merge documents from both sources, prioritizing newer documents from the dedicated table
+      const allDocuments = [...legacyDocuments, ...(documentsData || [])]
+      const uniqueDocuments = allDocuments.reduce((acc, doc) => {
+        const existing = acc.find(d => d.document_type === doc.document_type)
+        if (!existing || (doc.id && !doc.id.startsWith('legacy-'))) {
+          // Replace if no existing doc or if current doc is from dedicated table
+          return acc.filter(d => d.document_type !== doc.document_type).concat(doc)
+        }
+        return acc
+      }, [] as VehicleDocument[])
+
+      setDocuments(uniqueDocuments)
 
       // Fetch service logs
       const { data: serviceData, error: serviceError } = await supabase
