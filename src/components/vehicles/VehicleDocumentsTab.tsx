@@ -91,26 +91,33 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
 
     try {
       // Upload file to storage
-      const fileName = `${vehicleId}/${selectedType}-${Date.now()}.${selectedFile.name.split('.').pop()}`
-      const { error: uploadError } = await supabase.storage
+      const ext = selectedFile.name.includes('.') ? selectedFile.name.split('.').pop() : 'pdf'
+      const safeType = selectedType || 'misc'
+      const fileName = `${vehicleId}/${safeType}-${Date.now()}.${ext}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('vehicle-documents')
-        .upload(fileName, selectedFile)
+        .upload(fileName, selectedFile, { upsert: false })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        // Provide clearer error to UI
+        throw new Error(uploadError.message || 'Upload failed')
+      }
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: publicData } = supabase.storage
         .from('vehicle-documents')
         .getPublicUrl(fileName)
+      const publicUrl = publicData?.publicUrl
+      if (!publicUrl) throw new Error('Could not get public URL for uploaded file')
 
       // Check if we're updating a legacy document
-      const isLegacyDoc = editingDoc && editingDoc.id && editingDoc.id.startsWith('legacy-')
+      const isLegacyDoc = !!(editingDoc && editingDoc.id && editingDoc.id.startsWith('legacy-'))
 
       if (isLegacyDoc) {
         // Update the vehicles table for legacy documents and also create a new document record
-        const updateField = `${selectedType}_document_url`
+        const updateField = `${safeType}_document_url`
         const { error: legacyUpdateErr } = await supabase
           .from('vehicles')
-          .update({ [updateField]: publicUrl })
+          .update({ [updateField]: publicUrl, updated_at: new Date().toISOString() })
           .eq('id', vehicleId)
         if (legacyUpdateErr) throw legacyUpdateErr
 
@@ -119,7 +126,7 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
           .from('vehicle_documents')
           .insert({
             vehicle_id: vehicleId,
-            document_type: selectedType as any,
+            document_type: safeType as any,
             document_url: publicUrl,
             issue_date: issueDate || null,
             expiry_date: expiryDate || null,
@@ -136,6 +143,7 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
             issue_date: issueDate || null,
             expiry_date: expiryDate || null,
             notes: notes || null,
+            updated_at: new Date().toISOString()
           })
           .eq('id', editingDoc.id)
         if (updateErr) throw updateErr
@@ -145,7 +153,7 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
           .from('vehicle_documents')
           .insert({
             vehicle_id: vehicleId,
-            document_type: selectedType as any,
+            document_type: safeType as any,
             document_url: publicUrl,
             issue_date: issueDate || null,
             expiry_date: expiryDate || null,
@@ -159,9 +167,9 @@ export const VehicleDocumentsTab: React.FC<VehicleDocumentsTabProps> = ({
       resetUploadState()
       onDocumentsUpdated()
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading document:', error)
-      toast.error('Failed to upload document')
+      toast.error(error?.message || 'Failed to upload document')
     } finally {
       setIsUploading(false)
     }

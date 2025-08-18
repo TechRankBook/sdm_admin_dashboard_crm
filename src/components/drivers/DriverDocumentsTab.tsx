@@ -109,7 +109,10 @@ export const DriverDocumentsTab: React.FC<DriverDocumentsTabProps> = ({
         updated_at: new Date().toISOString()
       }
 
-      if (!approved && rejectionReason.trim()) {
+      if (approved) {
+        // Clear any previous rejection reason upon approval
+        updates.rejection_reason = null
+      } else if (rejectionReason.trim()) {
         updates.rejection_reason = rejectionReason.trim()
       }
 
@@ -196,7 +199,7 @@ export const DriverDocumentsTab: React.FC<DriverDocumentsTabProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {driver.rejection_reason && (
+          {driver.kyc_status === 'rejected' && driver.rejection_reason && (
             <div className="bg-red-100 border border-red-200 rounded-lg p-3">
               <p className="text-sm text-red-800">
                 <strong>Rejection Reason:</strong> {driver.rejection_reason}
