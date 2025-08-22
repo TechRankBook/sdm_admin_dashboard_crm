@@ -20,6 +20,7 @@ export interface BookingFilters {
   serviceType: string
   timeRange: string
   assignmentStatus: string
+  paymentStatus: string
   customDateRange?: DateRange
 }
 
@@ -56,7 +57,8 @@ export const BookingFiltersAndSearch: React.FC<BookingFiltersAndSearchProps> = (
       status: '',
       serviceType: '',
       timeRange: '',
-      assignmentStatus: ''
+      assignmentStatus: '',
+      paymentStatus: ''
     })
   }
 
@@ -81,7 +83,7 @@ export const BookingFiltersAndSearch: React.FC<BookingFiltersAndSearchProps> = (
         </div>
 
         {/* Filters Row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           {/* Status Filter */}
           <Select value={filters.status || undefined} onValueChange={(value) => handleFilterChange('status', value)}>
             <SelectTrigger>
@@ -138,6 +140,20 @@ export const BookingFiltersAndSearch: React.FC<BookingFiltersAndSearchProps> = (
               <SelectItem value="assigned">Fully Assigned</SelectItem>
               <SelectItem value="partial">Partially Assigned</SelectItem>
               <SelectItem value="unassigned">Unassigned</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Payment Status Filter */}
+          <Select value={filters.paymentStatus || undefined} onValueChange={(value) => handleFilterChange('paymentStatus', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Payment Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Payments</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="refunded">Refunded</SelectItem>
             </SelectContent>
           </Select>
 
@@ -209,6 +225,16 @@ export const BookingFiltersAndSearch: React.FC<BookingFiltersAndSearchProps> = (
                 <X 
                   className="w-3 h-3 cursor-pointer" 
                   onClick={() => clearFilter('assignmentStatus')}
+                />
+              </Badge>
+            )}
+            
+            {filters.paymentStatus && (
+              <Badge variant="secondary" className="flex items-center space-x-1">
+                <span>Payment: {filters.paymentStatus}</span>
+                <X 
+                  className="w-3 h-3 cursor-pointer" 
+                  onClick={() => clearFilter('paymentStatus')}
                 />
               </Badge>
             )}

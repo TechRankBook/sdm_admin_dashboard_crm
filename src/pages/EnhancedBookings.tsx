@@ -29,7 +29,8 @@ export const EnhancedBookings: React.FC = () => {
     status: '',
     serviceType: '',
     timeRange: '',
-    assignmentStatus: ''
+    assignmentStatus: '',
+    paymentStatus: ''
   })
 
   useEffect(() => {
@@ -215,6 +216,11 @@ export const EnhancedBookings: React.FC = () => {
           filtered = filtered.filter(booking => !booking.driver_id && !booking.vehicle_id)
           break
       }
+    }
+
+    // Payment status filter
+    if (filters.paymentStatus && filters.paymentStatus !== 'all') {
+      filtered = filtered.filter(booking => booking.payment_status === filters.paymentStatus)
     }
 
     return filtered
