@@ -54,6 +54,12 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
       setIsSubmitting(false)
       return
     }
+    if (phoneNumber.lenght <10) {
+      toast.error('Please enter valid 10 digit phone number')      
+      setIsSubmitting(false)
+      return
+    }
+    
 
     // Check if SUPABASE_URL is available from the imported lib/supabase
     if (!SUPABASE_URL) {
