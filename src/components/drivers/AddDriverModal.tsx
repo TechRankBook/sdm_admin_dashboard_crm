@@ -149,7 +149,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
           return
         }
         console.log('OTP verification successful:', result)
-        setUserId(result.user.id); // Store the user ID for later use
+        setUserId(result.userId); // Store the user ID for later use
         setAccessToken(result.accessToken); // Store the access token for Edge Function calls
         toast.success('OTP verified successfully!')
         setStep('details') // Proceed to the next step
