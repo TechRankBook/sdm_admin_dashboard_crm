@@ -12,6 +12,8 @@ import { supabase } from '@/lib/supabase'
 import { ServiceType, PricingRule, RentalPackage, ZonePricing } from '@/types/database'
 import { AddPricingRuleModal } from '@/components/pricing/AddPricingRuleModal'
 import { EditPricingRuleModal } from '@/components/pricing/EditPricingRuleModal'
+import { AddCarRentalPackageModal } from '@/components/pricing/AddCarRentalPackageModal'
+import { EditCarRentalPackageModal } from '@/components/pricing/EditCarRentalPackageModal'
 
 export const Pricing: React.FC = () => {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
@@ -34,6 +36,11 @@ export const Pricing: React.FC = () => {
   })
   
   const [estimatedFare, setEstimatedFare] = useState<number | null>(null)
+
+  // Car Rental modals state
+  const [addRentalOpen, setAddRentalOpen] = useState(false)
+  const [editRentalOpen, setEditRentalOpen] = useState(false)
+  const [selectedPackage, setSelectedPackage] = useState<any | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -155,6 +162,11 @@ export const Pricing: React.FC = () => {
   }
 
   const handleAddRule = () => {
+    // Use car rental modal only for car_rental tab
+    if (activeTab === 'car_rental') {
+      setAddRentalOpen(true)
+      return
+    }
     setAddRuleModalOpen(true)
   }
 
@@ -166,6 +178,14 @@ export const Pricing: React.FC = () => {
   const handleModalSuccess = () => {
     console.log('🔄 Modal success - refetching data...')
     fetchData()
+  }
+
+  // Car rental helpers
+  const getCarRentalPackages = () => {
+    // If DB has service_type_id, filter by active service; else show all active
+    const activeService = serviceTypes.find(s => s.name === 'car_rental')
+    if (!activeService) return rentalPackages
+    return rentalPackages.filter((p: any) => p.is_active)
   }
 
   if (loading) {
@@ -291,6 +311,54 @@ export const Pricing: React.FC = () => {
                             </div>
                           </div>
                         ))
+                      )}
+
+                      {/* Car Rental Packages Section */}
+                      {service.name === 'car_rental' && (
+                        <div className="space-y-4 mt-6">
+                          <h4 className="font-semibold">Car Rental Packages</h4>
+                          {getCarRentalPackages().length === 0 ? (
+                            <p className="text-gray-500 text-center py-8">No car rental packages yet</p>
+                          ) : (
+                            getCarRentalPackages().map((pkg: any) => (
+                              <div key={pkg.id} className="border rounded-lg p-4">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <h5 className="font-medium">{pkg.name} • {(/suv/i.test(pkg.vehicle_type) ? 'SUV' : /sedan/i.test(pkg.vehicle_type) ? 'Sedan' : pkg.vehicle_type)}</h5>
+                                    <div className="text-sm text-gray-600 space-y-1 mt-2">
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                          <p><span className="font-medium">Base:</span> ₹{pkg.base_price}</p>
+                                          <p><span className="font-medium">Included:</span> {pkg.duration_hours}h / {pkg.included_kilometers}km</p>
+                                        </div>
+                                        <div>
+                                          <p><span className="font-medium">Extra km:</span> ₹{pkg.extra_km_rate}</p>
+                                          <p><span className="font-medium">Extra hour:</span> ₹{pkg.extra_hour_rate}</p>
+                                        </div>
+                                      </div>
+                                      {(pkg.cancellation_fee > 0 || pkg.no_show_fee > 0) && (
+                                        <div className="mt-2 pt-2 border-t">
+                                          {pkg.cancellation_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded mr-2">Cancellation: ₹{pkg.cancellation_fee}</span>}
+                                          {pkg.no_show_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded">No Show: ₹{pkg.no_show_fee}</span>}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedPackage(pkg)
+                                      setEditRentalOpen(true)
+                                    }}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       )}
                     </div>
                   </CardContent>
@@ -451,6 +519,19 @@ export const Pricing: React.FC = () => {
         open={editRuleModalOpen}
         onOpenChange={setEditRuleModalOpen}
         rule={selectedRule}
+        onSuccess={handleModalSuccess}
+      />
+
+      {/* Car Rental Modals */}
+      <AddCarRentalPackageModal
+        open={addRentalOpen}
+        onOpenChange={setAddRentalOpen}
+        onSuccess={handleModalSuccess}
+      />
+      <EditCarRentalPackageModal
+        open={editRentalOpen}
+        onOpenChange={setEditRentalOpen}
+        pkg={selectedPackage}
         onSuccess={handleModalSuccess}
       />
     </div>
