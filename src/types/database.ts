@@ -117,7 +117,7 @@ export interface VehicleMaintenanceLog {
 
 export interface ServiceType {
   id: string
-  name: 'city_ride' | 'car_rental' | 'airport' | 'outstation' | 'sharing'
+  name: 'ride_later' | 'car_rental' | 'airport' | 'outstation' | 'sharing'
   display_name: string
   description?: string
   is_active: boolean

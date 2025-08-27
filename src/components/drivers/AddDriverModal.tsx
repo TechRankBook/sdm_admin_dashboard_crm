@@ -54,7 +54,7 @@ export const AddDriverModal: React.FC<AddDriverModalProps> = ({ open, onOpenChan
       setIsSubmitting(false)
       return
     }
-    if (phoneNumber.lenght <10) {
+    if (phoneNumber.length < 10) {
       toast.error('Please enter valid 10 digit phone number')      
       setIsSubmitting(false)
       return

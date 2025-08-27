@@ -7,7 +7,7 @@ import { Plus, AlertCircle, TrendingUp, Clock, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ServiceType, Booking } from '@/types/database'
 import { ServiceSelector } from '@/components/booking/ServiceSelector'
-import { CityRideBooking } from '@/components/booking/CityRideBooking'
+import { RideLaterBooking } from '@/components/booking/RideLaterBooking'
 import { CarRentalBooking } from '@/components/booking/CarRentalBooking'
 import { AirportBooking } from '@/components/booking/AirportBooking'
 import { OutstationBooking } from '@/components/booking/OutstationBooking'
@@ -284,8 +284,8 @@ export const EnhancedBookings: React.FC = () => {
     }
 
     switch (selectedService) {
-      case 'city_ride':
-        return <CityRideBooking onBook={handleBooking} />
+      case 'ride_later':
+        return <RideLaterBooking onBook={handleBooking} />
       case 'car_rental':
         return <CarRentalBooking onBook={handleBooking} />
       case 'airport':

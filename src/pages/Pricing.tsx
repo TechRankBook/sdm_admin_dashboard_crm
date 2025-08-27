@@ -20,7 +20,7 @@ export const Pricing: React.FC = () => {
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([])
   const [rentalPackages, setRentalPackages] = useState<RentalPackage[]>([])
   const [zonePricing, setZonePricing] = useState<ZonePricing[]>([])
-  const [activeTab, setActiveTab] = useState('city_ride')
+  const [activeTab, setActiveTab] = useState('ride_later')
   const [loading, setLoading] = useState(true)
   const [addRuleModalOpen, setAddRuleModalOpen] = useState(false)
   const [editRuleModalOpen, setEditRuleModalOpen] = useState(false)
@@ -119,7 +119,7 @@ export const Pricing: React.FC = () => {
 
   const getServiceIcon = (serviceName: string) => {
     switch (serviceName) {
-      case 'city_ride': return <Car className="h-5 w-5" />
+      case 'ride_later': return <Car className="h-5 w-5" />
       case 'car_rental': return <Clock className="h-5 w-5" />
       case 'airport': return <Plane className="h-5 w-5" />
       case 'outstation': return <MapPin className="h-5 w-5" />
@@ -440,7 +440,7 @@ export const Pricing: React.FC = () => {
                 />
               </div>
 
-              {fareEstimate.serviceType === 'city_ride' && (
+              {fareEstimate.serviceType === 'ride_later' && (
                 <div>
                   <Label>Duration (minutes)</Label>
                   <Input

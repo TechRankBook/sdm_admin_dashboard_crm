@@ -17,7 +17,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
 }) => {
   const getServiceIcon = (serviceName: string) => {
     switch (serviceName) {
-      case 'city_ride': return <Car className="h-8 w-8" />
+      case 'ride_later': return <Car className="h-8 w-8" />
       case 'car_rental': return <Clock className="h-8 w-8" />
       case 'airport': return <Plane className="h-8 w-8" />
       case 'outstation': return <MapPin className="h-8 w-8" />
@@ -28,7 +28,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
 
   const getServiceFeatures = (serviceName: string) => {
     switch (serviceName) {
-      case 'city_ride':
+      case 'ride_later':
         return ['Schedule up to 48h ahead', 'Fixed pricing', 'Instant booking']
       case 'car_rental':
         return ['Hourly packages', 'Unlimited halts', 'Flexible stops']

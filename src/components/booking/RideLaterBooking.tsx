@@ -12,11 +12,11 @@ import { CalendarIcon, Clock, MapPin } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 
-interface CityRideBookingProps {
+interface RideLaterBookingProps {
   onBook: (bookingData: any) => void
 }
 
-export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
+export const RideLaterBooking: React.FC<RideLaterBookingProps> = ({ onBook }) => {
   const [bookingData, setBookingData] = useState({
     pickup: '',
     dropoff: '',
@@ -53,7 +53,7 @@ export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
       : null
 
     onBook({
-      serviceType: 'city_ride',
+      serviceType: 'ride_later',
       pickup: bookingData.pickup,
       dropoff: bookingData.dropoff,
       pickupCoordinates: bookingData.pickupCoordinates,
@@ -70,7 +70,7 @@ export const CityRideBooking: React.FC<CityRideBookingProps> = ({ onBook }) => {
       <CardHeader>
         <CardTitle className="flex items-center">
           <MapPin className="h-5 w-5 mr-2" />
-          City Ride Booking
+          Ride Later Booking
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
