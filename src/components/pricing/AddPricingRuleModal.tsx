@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ import { ServiceType, PricingRule } from '@/types/database'
 
 const pricingRuleSchema = z.object({
   vehicle_type: z.string().min(1, 'Vehicle type is required'),
+  zone: z.enum(['Bangalore','Mysuru']).optional(),
   base_fare: z.string().min(1, 'Base fare is required'),
   per_km_rate: z.string().min(1, 'Per km rate is required'),
   per_minute_rate: z.string().min(1, 'Per minute rate is required'),
@@ -46,6 +47,7 @@ export const AddPricingRuleModal: React.FC<AddPricingRuleModalProps> = ({
     resolver: zodResolver(pricingRuleSchema),
     defaultValues: {
       vehicle_type: '',
+      zone: 'Bangalore' as any,
       base_fare: '',
       per_km_rate: '',
       per_minute_rate: '2.0',
@@ -64,6 +66,7 @@ export const AddPricingRuleModal: React.FC<AddPricingRuleModalProps> = ({
       const insertData = {
         service_type_id: serviceType.id,
         vehicle_type: data.vehicle_type,
+        zone: (data as any).zone || null,
         base_fare: parseFloat(data.base_fare),
         per_km_rate: parseFloat(data.per_km_rate),
         per_minute_rate: parseFloat(data.per_minute_rate),
@@ -83,6 +86,7 @@ export const AddPricingRuleModal: React.FC<AddPricingRuleModalProps> = ({
         .from('pricing_rules')
         .insert(insertData)
         .select()
+        .select()
 
       if (error) throw error
 
@@ -98,6 +102,76 @@ export const AddPricingRuleModal: React.FC<AddPricingRuleModalProps> = ({
       setLoading(false)
     }
   }
+
+  const showZone = serviceType.name === 'airport' || serviceType.name === 'ride_later'
+
+  // Autofill defaults from screenshot when vehicle or zone changes
+  const vehicle = (form.watch('vehicle_type') || '') as 'sedan' | 'suv' | ''
+  const zone = (form.watch('zone') || 'Bangalore') as 'Bangalore' | 'Mysuru'
+
+  useEffect(() => {
+    if (!showZone || !vehicle) return
+
+    // Default map from screenshot
+    const defaults: Record<'sedan' | 'suv', Record<'Bangalore' | 'Mysuru', any>> = {
+      sedan: {
+        Bangalore: {
+          base_fare: '99',
+          per_km_rate: '14',
+          per_minute_rate: '1.50',
+          minimum_fare: '299',
+          surge_multiplier: '1.0',
+          cancellation_fee: '100',
+          no_show_fee: '150',
+          waiting_charges_per_minute: '2.00',
+          free_waiting_time_minutes: '5',
+        },
+        Mysuru: {
+          base_fare: '99',
+          per_km_rate: '12',
+          per_minute_rate: '1.20',
+          minimum_fare: '249',
+          surge_multiplier: '1.0',
+          cancellation_fee: '70',
+          no_show_fee: '120',
+          waiting_charges_per_minute: '1.50',
+          free_waiting_time_minutes: '5',
+        }
+      },
+      suv: {
+        Bangalore: {
+          base_fare: '119',
+          per_km_rate: '19',
+          per_minute_rate: '2.00',
+          minimum_fare: '369',
+          surge_multiplier: '1.0',
+          cancellation_fee: '125',
+          no_show_fee: '175',
+          waiting_charges_per_minute: '2.50',
+          free_waiting_time_minutes: '5',
+        },
+        Mysuru: {
+          base_fare: '109',
+          per_km_rate: '18',
+          per_minute_rate: '1.75',
+          minimum_fare: '319',
+          surge_multiplier: '1.0',
+          cancellation_fee: '100',
+          no_show_fee: '140',
+          waiting_charges_per_minute: '2.00',
+          free_waiting_time_minutes: '5',
+        }
+      }
+    }
+
+    const d = defaults[vehicle]?.[zone]
+    if (d) {
+      // Only set fields if empty or previously autofilled to avoid overwriting user's manual edits unintentionally.
+      const current = form.getValues()
+      const next = { ...current, ...d }
+      form.reset(next, { keepDefaultValues: false })
+    }
+  }, [vehicle, zone, showZone])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,14 +201,36 @@ export const AddPricingRuleModal: React.FC<AddPricingRuleModalProps> = ({
                       <SelectContent>
                         <SelectItem value="sedan">Sedan</SelectItem>
                         <SelectItem value="suv">SUV</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
-                        <SelectItem value="Tempo Traveller">Tempo Traveller</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {showZone && (
+                <FormField
+                  control={form.control}
+                  name="zone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Zone</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select zone" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Bangalore">Bangalore</SelectItem>
+                          <SelectItem value="Mysuru">Mysuru</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}

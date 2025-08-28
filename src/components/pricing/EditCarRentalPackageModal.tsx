@@ -18,9 +18,12 @@ const PACKAGE_OPTIONS = [
   { label: '12hr / 120km', hours: 12, km: 120 },
 ] as const
 
+const ZONES = ['Bangalore', 'Mysuru'] as const
+
 const carRentalSchema = z.object({
   vehicle_type_id: z.string().min(1, 'Vehicle Type is required'),
   vehicle_type_name: z.string().min(1, 'Vehicle Type name is required'),
+  zone: z.enum(ZONES, { required_error: 'Zone is required' }).optional(),
   name: z.enum(['4hr / 40km', '8hr / 80km', '12hr / 120km'], { required_error: 'Package Name is required' }),
   duration_hours: z
     .string()
@@ -69,6 +72,7 @@ export interface RentalPackageRow {
   name: string
   vehicle_type_id: string | null
   vehicle_type: string
+  zone?: string | null
   duration_hours: number
   included_kilometers: number
   base_price: number
@@ -149,6 +153,7 @@ export const EditCarRentalPackageModal: React.FC<EditCarRentalPackageModalProps>
     form.reset({
       vehicle_type_id: vt,
       vehicle_type_name: pkg.vehicle_type || '',
+      zone: (pkg as any).zone as any,
       name: (pkg.name as CarRentalFormData['name']) || (undefined as any),
       duration_hours: String(pkg.duration_hours ?? ''),
       included_kilometers: String(pkg.included_kilometers ?? ''),
@@ -170,6 +175,7 @@ export const EditCarRentalPackageModal: React.FC<EditCarRentalPackageModalProps>
         name: values.name,
         vehicle_type_id: values.vehicle_type_id,
         vehicle_type: values.vehicle_type_name,
+        zone: (values as any).zone,
         duration_hours: Number(values.duration_hours),
         included_kilometers: Number(values.included_kilometers),
         base_price: Number(values.base_price),
@@ -204,15 +210,15 @@ export const EditCarRentalPackageModal: React.FC<EditCarRentalPackageModalProps>
     try {
       const { error } = await supabase
         .from('rental_packages')
-        .update({ is_active: false })
+        .delete()
         .eq('id', pkg.id)
       if (error) throw error
-      toast.success('Package deactivated')
+      toast.success('Package deleted')
       onOpenChange(false)
       onSuccess()
     } catch (e) {
-      console.error('Failed to deactivate package', e)
-      toast.error('Failed to deactivate')
+      console.error('Failed to delete package', e)
+      toast.error('Failed to delete')
     } finally {
       setLoading(false)
     }
@@ -233,6 +239,30 @@ export const EditCarRentalPackageModal: React.FC<EditCarRentalPackageModalProps>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Zone */}
+              <FormField
+                control={form.control}
+                name="zone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Zone</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select zone" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ZONES.map((z) => (
+                          <SelectItem key={z} value={z}>{z}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Vehicle Type */}
               <FormField
                 control={form.control}

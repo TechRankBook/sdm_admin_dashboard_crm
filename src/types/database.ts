@@ -129,6 +129,7 @@ export interface PricingRule {
   id: string
   service_type_id: string
   vehicle_type: string
+  zone?: string | null
   base_fare: number
   per_km_rate: number
   per_minute_rate?: number
@@ -150,6 +151,7 @@ export interface RentalPackage {
   service_type_id: string
   name: string
   vehicle_type: string
+  zone?: string
   duration_hours: number
   included_kilometers: number
   base_price: number

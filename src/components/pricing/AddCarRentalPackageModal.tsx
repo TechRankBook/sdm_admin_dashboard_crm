@@ -19,28 +19,53 @@ const PACKAGE_OPTIONS = [
 ] as const
 
 type VehicleKind = 'Sedan' | 'SUV'
+const ZONES = ['Bangalore', 'Mysuru'] as const
+type Zone = typeof ZONES[number]
 
-const BASE_PRICE_MAP: Record<VehicleKind, Record<string, number>> = {
+// Zone-wise base prices per package from screenshot
+const ZONED_BASE_PRICE_MAP: Record<VehicleKind, Record<Zone, Record<string, number>>> = {
   Sedan: {
-    '4hr / 40km': 800,
-    '8hr / 80km': 1600,
-    '12hr / 120km': 2200,
+    Bangalore: {
+      '4hr / 40km': 950,
+      '8hr / 80km': 1700,
+      '12hr / 120km': 2100,
+    },
+    Mysuru: {
+      '4hr / 40km': 800,
+      '8hr / 80km': 1600,
+      '12hr / 120km': 2200,
+    },
   },
   SUV: {
-    '4hr / 40km': 1600,
-    '8hr / 80km': 2200,
-    '12hr / 120km': 3200,
+    Bangalore: {
+      '4hr / 40km': 1900,
+      '8hr / 80km': 2400,
+      '12hr / 120km': 2800,
+    },
+    Mysuru: {
+      '4hr / 40km': 1600,
+      '8hr / 80km': 2200,
+      '12hr / 120km': 3200,
+    },
   },
 }
 
-const EXTRA_MAP: Record<VehicleKind, { km: number; hour: number }> = {
-  Sedan: { km: 12, hour: 125 },
-  SUV: { km: 13.5, hour: 150 },
+// Zone-wise extra rates from screenshot
+const ZONED_EXTRA_MAP: Record<VehicleKind, Record<Zone, { km: number; hour: number }>> = {
+  Sedan: {
+    Bangalore: { km: 13, hour: 150 },
+    Mysuru: { km: 12, hour: 125 },
+  },
+  SUV: {
+    Bangalore: { km: 16.5, hour: 200 },
+    Mysuru: { km: 13.5, hour: 150 },
+  },
 }
 
 const carRentalSchema = z.object({
   vehicle_type_id: z.string().min(1, 'Vehicle Type is required'),
   vehicle_type_name: z.string().min(1, 'Vehicle Type name is required'),
+  zone: z.enum(ZONES, { required_error: 'Zone is required' }),
   name: z.enum(['4hr / 40km', '8hr / 80km', '12hr / 120km'], {
     required_error: 'Package Name is required'
   }),
@@ -90,12 +115,14 @@ interface AddCarRentalPackageModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+  defaultZone?: Zone
 }
 
 export const AddCarRentalPackageModal: React.FC<AddCarRentalPackageModalProps> = ({
   open,
   onOpenChange,
   onSuccess,
+  defaultZone,
 }) => {
   const [loading, setLoading] = useState(false)
   const [vehicleTypes, setVehicleTypes] = useState<VehicleTypeOption[]>([])
@@ -105,6 +132,7 @@ export const AddCarRentalPackageModal: React.FC<AddCarRentalPackageModalProps> =
     defaultValues: {
       vehicle_type_id: '',
       vehicle_type_name: '',
+      zone: defaultZone as any,
       name: undefined as unknown as CarRentalFormData['name'],
       duration_hours: '',
       included_kilometers: '',
@@ -140,17 +168,22 @@ export const AddCarRentalPackageModal: React.FC<AddCarRentalPackageModalProps> =
           return true
         })
         setVehicleTypes(unique)
+        // Prime zone if default provided
+        if (defaultZone && !form.getValues('zone')) {
+          form.setValue('zone', defaultZone as any, { shouldValidate: true })
+        }
       } catch (e) {
         console.error('Failed to load vehicle types', e)
         toast.error('Failed to load vehicle types')
       }
     }
     if (open) fetchVehicleTypes()
-  }, [open])
+  }, [open, defaultZone])
 
   // Auto-fill when vehicle type or package changes
   const selectedVehicleName = form.watch('vehicle_type_name') as VehicleKind | ''
   const selectedPackage = form.watch('name')
+  const selectedZone = form.watch('zone') as Zone | undefined
 
   useEffect(() => {
     if (!selectedVehicleName || !selectedPackage) return
@@ -161,19 +194,21 @@ export const AddCarRentalPackageModal: React.FC<AddCarRentalPackageModalProps> =
     form.setValue('duration_hours', String(pkg.hours), { shouldValidate: true })
     form.setValue('included_kilometers', String(pkg.km), { shouldValidate: true })
 
-    // Set base price from map
-    const base = BASE_PRICE_MAP[selectedVehicleName as VehicleKind]?.[selectedPackage]
-    if (typeof base === 'number') {
-      form.setValue('base_price', String(base), { shouldValidate: true })
-    }
+    if (selectedZone) {
+      // Set base price from zone map
+      const base = ZONED_BASE_PRICE_MAP[selectedVehicleName as VehicleKind]?.[selectedZone]?.[selectedPackage]
+      if (typeof base === 'number') {
+        form.setValue('base_price', String(base), { shouldValidate: true })
+      }
 
-    // Extra rates per vehicle type
-    const extra = EXTRA_MAP[selectedVehicleName as VehicleKind]
-    if (extra) {
-      form.setValue('extra_km_rate', String(extra.km), { shouldValidate: true })
-      form.setValue('extra_hour_rate', String(extra.hour), { shouldValidate: true })
+      // Extra rates per vehicle type & zone
+      const extra = ZONED_EXTRA_MAP[selectedVehicleName as VehicleKind]?.[selectedZone]
+      if (extra) {
+        form.setValue('extra_km_rate', String(extra.km), { shouldValidate: true })
+        form.setValue('extra_hour_rate', String(extra.hour), { shouldValidate: true })
+      }
     }
-  }, [selectedVehicleName, selectedPackage, form])
+  }, [selectedVehicleName, selectedPackage, selectedZone, form])
 
   const onSubmit = async (values: CarRentalFormData) => {
     setLoading(true)
@@ -182,6 +217,7 @@ export const AddCarRentalPackageModal: React.FC<AddCarRentalPackageModalProps> =
         name: values.name,
         vehicle_type_id: values.vehicle_type_id, // per latest schema
         vehicle_type: values.vehicle_type_name, // keep for backward compatibility/queries
+        zone: values.zone, // new zone column
         duration_hours: Number(values.duration_hours),
         included_kilometers: Number(values.included_kilometers),
         base_price: Number(values.base_price),
@@ -237,6 +273,30 @@ export const AddCarRentalPackageModal: React.FC<AddCarRentalPackageModalProps> =
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Zone */}
+              <FormField
+                control={form.control}
+                name="zone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Zone</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select zone" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ZONES.map((z) => (
+                          <SelectItem key={z} value={z}>{z}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Vehicle Type */}
               <FormField
                 control={form.control}

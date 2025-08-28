@@ -29,6 +29,7 @@ export const Pricing: React.FC = () => {
   const [fareEstimate, setFareEstimate] = useState({
     serviceType: '',
     vehicleType: '',
+    zone: 'Bangalore' as 'Bangalore' | 'Mysuru',
     pickup: '',
     dropoff: '',
     distance: '10',
@@ -41,6 +42,9 @@ export const Pricing: React.FC = () => {
   const [addRentalOpen, setAddRentalOpen] = useState(false)
   const [editRentalOpen, setEditRentalOpen] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState<any | null>(null)
+  const ZONES = ['All', 'Bangalore', 'Mysuru'] as const
+  const [rentalZoneFilter, setRentalZoneFilter] = useState<typeof ZONES[number]>('All')
+  const [ruleZoneFilter, setRuleZoneFilter] = useState<typeof ZONES[number]>('All')
 
   useEffect(() => {
     fetchData()
@@ -92,7 +96,7 @@ export const Pricing: React.FC = () => {
 
     if (fareEstimate.serviceType === 'car_rental') {
       const package_ = rentalPackages.find(p => 
-        p.vehicle_type === fareEstimate.vehicleType
+        p.vehicle_type === fareEstimate.vehicleType && (!p.zone || p.zone === fareEstimate.zone)
       )
       if (package_) {
         fare = package_.base_price
@@ -102,7 +106,8 @@ export const Pricing: React.FC = () => {
     } else {
       const rule = pricingRules.find(r => 
         r.service_type_id === serviceType.id && 
-        r.vehicle_type === fareEstimate.vehicleType
+        r.vehicle_type === fareEstimate.vehicleType &&
+        ((r as any).zone ? (r as any).zone === fareEstimate.zone : true)
       )
       if (rule) {
         fare = rule.base_fare + (parseFloat(fareEstimate.distance) * rule.per_km_rate)
@@ -134,8 +139,15 @@ export const Pricing: React.FC = () => {
       console.log('🚨 No active service found for tab:', activeTab)
       return []
     }
-    const filtered = pricingRules.filter(r => r.service_type_id === activeService.id)
-    console.log(`📋 Pricing Rules for ${activeService.display_name} (ID: ${activeService.id}):`, filtered)
+    const filtered = pricingRules.filter((r: any) => {
+      if (r.service_type_id !== activeService.id) return false
+      // Apply zone filter only for airport and ride_later
+      if ((activeService.name === 'airport' || activeService.name === 'ride_later')) {
+        if (ruleZoneFilter !== 'All') return r.zone === ruleZoneFilter
+      }
+      return true
+    })
+    console.log(`📋 Pricing Rules for ${activeService.display_name} (ID: ${activeService.id}) with zone filter ${ruleZoneFilter}:`, filtered)
     return filtered
   }
 
@@ -182,10 +194,12 @@ export const Pricing: React.FC = () => {
 
   // Car rental helpers
   const getCarRentalPackages = () => {
-    // If DB has service_type_id, filter by active service; else show all active
-    const activeService = serviceTypes.find(s => s.name === 'car_rental')
-    if (!activeService) return rentalPackages
-    return rentalPackages.filter((p: any) => p.is_active)
+    // Only show active packages; when 'All' is selected, include all zones
+    return rentalPackages.filter((p: any) => {
+      if (!p.is_active) return false
+      if (rentalZoneFilter === 'All') return true
+      return !p.zone || p.zone === rentalZoneFilter
+    })
   }
 
   if (loading) {
@@ -235,7 +249,9 @@ export const Pricing: React.FC = () => {
                   </div>
                   <h3 className="font-semibold text-sm">{service.display_name}</h3>
                   <Badge variant="secondary" className="mt-1 text-xs">
-                    {pricingRules.filter(r => r.service_type_id === service.id).length} rules
+                    {service.name === 'car_rental' 
+                      ? rentalPackages.filter(r => r.service_type_id === service.id && r.is_active).length + ' packages'
+                      : pricingRules.filter(r => r.service_type_id === service.id).length + ' rules'}
                   </Badge>
                 </CardContent>
               </Card>
@@ -265,102 +281,134 @@ export const Pricing: React.FC = () => {
                       </div>
                       <Button size="sm" onClick={handleAddRule}>
                         <Plus className="h-4 w-4 mr-1" />
-                        Add Rule
+                        {service.name === 'car_rental' ? 'Add Package' : 'Add Rule'}
                       </Button>
                     </CardTitle>
                     <CardDescription>{service.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {/* Standard Pricing Rules for All Services */}
-                    <div className="space-y-4">
-                      <h4 className="font-semibold">Pricing Rules</h4>
-                      {getActiveServicePricingRules().length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">No pricing rules configured yet</p>
-                      ) : (
-                        getActiveServicePricingRules().map((rule) => (
-                          <div key={rule.id} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <h5 className="font-medium capitalize">{rule.vehicle_type}</h5>
-                                <div className="text-sm text-gray-600 space-y-1 mt-2">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <p><span className="font-medium">Base:</span> ₹{rule.base_fare}</p>
-                                      <p><span className="font-medium">Per km:</span> ₹{rule.per_km_rate}</p>
-                                      {rule.per_minute_rate && <p><span className="font-medium">Per min:</span> ₹{rule.per_minute_rate}</p>}
-                                    </div>
-                                    <div>
-                                      <p><span className="font-medium">Minimum:</span> ₹{rule.minimum_fare}</p>
-                                      <p><span className="font-medium">Surge:</span> {rule.surge_multiplier}x</p>
-                                      {rule.waiting_charges_per_minute > 0 && (
-                                        <p><span className="font-medium">Waiting:</span> ₹{rule.waiting_charges_per_minute}/min</p>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {(rule.cancellation_fee > 0 || rule.no_show_fee > 0) && (
-                                    <div className="mt-2 pt-2 border-t">
-                                      {rule.cancellation_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded mr-2">Cancellation: ₹{rule.cancellation_fee}</span>}
-                                      {rule.no_show_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded">No Show: ₹{rule.no_show_fee}</span>}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <Button variant="outline" size="sm" onClick={() => handleEditRule(rule)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
+                    {/* Standard Pricing Rules for non-car_rental services only */}
+                    {service.name !== 'car_rental' && (
+                      <div className="space-y-4">
+                        <div className="flex items-end justify-between">
+                          <h4 className="font-semibold">Pricing Rules</h4>
+                          {(service.name === 'airport' || service.name === 'ride_later') && (
+                            <div className="flex items-center gap-2">
+                              <Label className="text-sm">Zone</Label>
+                              <Select value={ruleZoneFilter} onValueChange={(v: any) => setRuleZoneFilter(v as any)}>
+                                <SelectTrigger className="w-40">
+                                  <SelectValue placeholder="Zone" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="All">All</SelectItem>
+                                  <SelectItem value="Bangalore">Bangalore</SelectItem>
+                                  <SelectItem value="Mysuru">Mysuru</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                          </div>
-                        ))
-                      )}
-
-                      {/* Car Rental Packages Section */}
-                      {service.name === 'car_rental' && (
-                        <div className="space-y-4 mt-6">
-                          <h4 className="font-semibold">Car Rental Packages</h4>
-                          {getCarRentalPackages().length === 0 ? (
-                            <p className="text-gray-500 text-center py-8">No car rental packages yet</p>
-                          ) : (
-                            getCarRentalPackages().map((pkg: any) => (
-                              <div key={pkg.id} className="border rounded-lg p-4">
-                                <div className="flex justify-between items-start">
-                                  <div className="flex-1">
-                                    <h5 className="font-medium">{pkg.name} • {(/suv/i.test(pkg.vehicle_type) ? 'SUV' : /sedan/i.test(pkg.vehicle_type) ? 'Sedan' : pkg.vehicle_type)}</h5>
-                                    <div className="text-sm text-gray-600 space-y-1 mt-2">
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                          <p><span className="font-medium">Base:</span> ₹{pkg.base_price}</p>
-                                          <p><span className="font-medium">Included:</span> {pkg.duration_hours}h / {pkg.included_kilometers}km</p>
-                                        </div>
-                                        <div>
-                                          <p><span className="font-medium">Extra km:</span> ₹{pkg.extra_km_rate}</p>
-                                          <p><span className="font-medium">Extra hour:</span> ₹{pkg.extra_hour_rate}</p>
-                                        </div>
-                                      </div>
-                                      {(pkg.cancellation_fee > 0 || pkg.no_show_fee > 0) && (
-                                        <div className="mt-2 pt-2 border-t">
-                                          {pkg.cancellation_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded mr-2">Cancellation: ₹{pkg.cancellation_fee}</span>}
-                                          {pkg.no_show_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded">No Show: ₹{pkg.no_show_fee}</span>}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedPackage(pkg)
-                                      setEditRentalOpen(true)
-                                    }}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))
                           )}
                         </div>
-                      )}
-                    </div>
+                        {getActiveServicePricingRules().length === 0 ? (
+                          <p className="text-gray-500 text-center py-8">No pricing rules configured yet</p>
+                        ) : (
+                          getActiveServicePricingRules().map((rule) => (
+                            <div key={rule.id} className="border rounded-lg p-4">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h5 className="font-medium capitalize">{rule.vehicle_type}{(rule as any).zone ? ` • ${(rule as any).zone}` : ''}</h5>
+                                  <div className="text-sm text-gray-600 space-y-1 mt-2">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <p><span className="font-medium">Base:</span> ₹{rule.base_fare}</p>
+                                        <p><span className="font-medium">Per km:</span> ₹{rule.per_km_rate}</p>
+                                        {rule.per_minute_rate && <p><span className="font-medium">Per min:</span> ₹{rule.per_minute_rate}</p>}
+                                      </div>
+                                      <div>
+                                        <p><span className="font-medium">Minimum:</span> ₹{rule.minimum_fare}</p>
+                                        <p><span className="font-medium">Surge:</span> {rule.surge_multiplier}x</p>
+                                        {rule.waiting_charges_per_minute > 0 && (
+                                          <p><span className="font-medium">Waiting:</span> ₹{rule.waiting_charges_per_minute}/min</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {(rule.cancellation_fee > 0 || rule.no_show_fee > 0) && (
+                                      <div className="mt-2 pt-2 border-t">
+                                        {rule.cancellation_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded mr-2">Cancellation: ₹{rule.cancellation_fee}</span>}
+                                        {rule.no_show_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded">No Show: ₹{rule.no_show_fee}</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button variant="outline" size="sm" onClick={() => handleEditRule(rule)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+
+                    {/* Car Rental Packages Section */}
+                    {service.name === 'car_rental' && (
+                      <div className="space-y-4 mt-6">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-semibold">Car Rental Packages</h4>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Zone</span>
+                            <Select value={rentalZoneFilter} onValueChange={(v) => setRentalZoneFilter(v as any)}>
+                              <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder="Select zone" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ZONES.map(z => (<SelectItem key={z} value={z}>{z}</SelectItem>))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        {getCarRentalPackages().length === 0 ? (
+                          <p className="text-gray-500 text-center py-8">No car rental packages yet</p>
+                        ) : (
+                          getCarRentalPackages().map((pkg: any) => (
+                            <div key={pkg.id} className="border rounded-lg p-4">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h5 className="font-medium">{pkg.name} • {(/suv/i.test(pkg.vehicle_type) ? 'SUV' : /sedan/i.test(pkg.vehicle_type) ? 'Sedan' : pkg.vehicle_type)}</h5>
+                                  <div className="text-sm text-gray-600 space-y-1 mt-2">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <p><span className="font-medium">Base:</span> ₹{pkg.base_price}</p>
+                                        <p><span className="font-medium">Included:</span> {pkg.duration_hours}h / {pkg.included_kilometers}km</p>
+                                      </div>
+                                      <div>
+                                        <p><span className="font-medium">Extra km:</span> ₹{pkg.extra_km_rate}</p>
+                                        <p><span className="font-medium">Extra hour:</span> ₹{pkg.extra_hour_rate}</p>
+                                      </div>
+                                    </div>
+                                    {(pkg.cancellation_fee > 0 || pkg.no_show_fee > 0) && (
+                                      <div className="mt-2 pt-2 border-t">
+                                        {pkg.cancellation_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded mr-2">Cancellation: ₹{pkg.cancellation_fee}</span>}
+                                        {pkg.no_show_fee > 0 && <span className="text-xs bg-gray-100 px-2 py-1 rounded">No Show: ₹{pkg.no_show_fee}</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedPackage(pkg)
+                                    setEditRentalOpen(true)
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -411,6 +459,21 @@ export const Pricing: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {(fareEstimate.serviceType === 'car_rental' || fareEstimate.serviceType === 'ride_later' || fareEstimate.serviceType === 'airport') && (
+                <div>
+                  <Label>Zone</Label>
+                  <Select value={fareEstimate.zone} onValueChange={(value) => setFareEstimate(prev => ({ ...prev, zone: value as any }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select zone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Bangalore">Bangalore</SelectItem>
+                      <SelectItem value="Mysuru">Mysuru</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div>
                 <Label>Pickup Location</Label>
@@ -527,6 +590,7 @@ export const Pricing: React.FC = () => {
         open={addRentalOpen}
         onOpenChange={setAddRentalOpen}
         onSuccess={handleModalSuccess}
+        defaultZone={rentalZoneFilter as any}
       />
       <EditCarRentalPackageModal
         open={editRentalOpen}

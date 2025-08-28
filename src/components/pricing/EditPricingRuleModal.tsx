@@ -14,6 +14,7 @@ import { PricingRule } from '@/types/database'
 
 const pricingRuleSchema = z.object({
   vehicle_type: z.string().min(1, 'Vehicle type is required'),
+  zone: z.enum(['Bangalore','Mysuru']).optional(),
   base_fare: z.string().min(1, 'Base fare is required'),
   per_km_rate: z.string().min(1, 'Per km rate is required'),
   per_minute_rate: z.string().min(1, 'Per minute rate is required'),
@@ -62,6 +63,7 @@ export const EditPricingRuleModal: React.FC<EditPricingRuleModalProps> = ({
     if (rule && open) {
       form.reset({
         vehicle_type: rule.vehicle_type,
+        zone: (rule as any).zone as any,
         base_fare: rule.base_fare.toString(),
         per_km_rate: rule.per_km_rate.toString(),
         per_minute_rate: rule.per_minute_rate?.toString() || '2.0',
@@ -84,6 +86,7 @@ export const EditPricingRuleModal: React.FC<EditPricingRuleModalProps> = ({
         .from('pricing_rules')
         .update({
           vehicle_type: data.vehicle_type,
+          zone: (data as any).zone || null,
           base_fare: parseFloat(data.base_fare),
           per_km_rate: parseFloat(data.per_km_rate),
           per_minute_rate: parseFloat(data.per_minute_rate),
@@ -162,8 +165,28 @@ export const EditPricingRuleModal: React.FC<EditPricingRuleModalProps> = ({
                       <SelectContent>
                         <SelectItem value="sedan">Sedan</SelectItem>
                         <SelectItem value="suv">SUV</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
-                        <SelectItem value="Tempo Traveller">Tempo Traveller</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="zone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Zone</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select zone" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Bangalore">Bangalore</SelectItem>
+                        <SelectItem value="Mysuru">Mysuru</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
