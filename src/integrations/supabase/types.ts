@@ -1745,6 +1745,7 @@ export type Database = {
           vehicle_type: string | null
           vehicle_type_id: string | null
           waiting_charges_per_minute: number | null
+          zone: string | null
         }
         Insert: {
           base_fare?: number
@@ -1765,6 +1766,7 @@ export type Database = {
           vehicle_type?: string | null
           vehicle_type_id?: string | null
           waiting_charges_per_minute?: number | null
+          zone?: string | null
         }
         Update: {
           base_fare?: number
@@ -1785,6 +1787,7 @@ export type Database = {
           vehicle_type?: string | null
           vehicle_type_id?: string | null
           waiting_charges_per_minute?: number | null
+          zone?: string | null
         }
         Relationships: [
           {
@@ -1850,6 +1853,7 @@ export type Database = {
           vehicle_type: string
           vehicle_type_id: string | null
           waiting_limit_minutes: number | null
+          zone: string | null
         }
         Insert: {
           base_price: number
@@ -1867,6 +1871,7 @@ export type Database = {
           vehicle_type: string
           vehicle_type_id?: string | null
           waiting_limit_minutes?: number | null
+          zone?: string | null
         }
         Update: {
           base_price?: number
@@ -1884,6 +1889,7 @@ export type Database = {
           vehicle_type?: string
           vehicle_type_id?: string | null
           waiting_limit_minutes?: number | null
+          zone?: string | null
         }
         Relationships: [
           {

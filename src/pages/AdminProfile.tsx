@@ -1,28 +1,25 @@
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
+import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/lib/supabase'
-import { Admin } from '@/types/database'
 import { User, Lock, Camera } from 'lucide-react'
 
 export const AdminProfile: React.FC = () => {
   const { user } = useAuth()
-  const [adminData, setAdminData] = useState<Admin | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState(false)
+  const { profile, profileLoading, updateProfile, isUpdating } = useProfile()
   const [passwordChanging, setPasswordChanging] = useState(false)
   
   const [profileForm, setProfileForm] = useState({
-    full_name: '',
-    phone_no: '',
-    assigned_region: '',
+    full_name: profile?.full_name || '',
+    phone_no: profile?.phone_no || '',
+    assigned_region: profile?.assigned_region || '',
   })
   
   const [passwordForm, setPasswordForm] = useState({
@@ -33,58 +30,23 @@ export const AdminProfile: React.FC = () => {
   
   const [profilePicture, setProfilePicture] = useState<File | null>(null)
 
-  useEffect(() => {
-    if (user) {
-      fetchAdminData()
-    }
-  }, [user])
-
-  const fetchAdminData = async () => {
-    try {
-      // Fetch from unified admin view
-      const { data, error } = await supabase
-        .from('admins_with_user_info')
-        .select('*')
-        .eq('id', user?.id)
-        .single()
-
-      if (error) throw error
-      
-      // Transform data to match existing interface
-      const transformedData = {
-        id: data.id,
-        full_name: data.full_name,
-        email: data.email,
-        phone_no: data.phone_no,
-        profile_picture_url: data.profile_picture_url,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        can_approve_bookings: data.can_approve_bookings || true,
-        assigned_region: data.assigned_region || ''
-      }
-      
-      setAdminData(transformedData)
+  // Update form when profile loads
+  React.useEffect(() => {
+    if (profile) {
       setProfileForm({
-        full_name: transformedData.full_name || '',
-        phone_no: transformedData.phone_no || '',
-        assigned_region: transformedData.assigned_region || '',
+        full_name: profile.full_name || '',
+        phone_no: profile.phone_no || '',
+        assigned_region: profile.assigned_region || '',
       })
-    } catch (error) {
-      console.error('Error fetching admin data:', error)
-      toast.error('Failed to load profile data')
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [profile])
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user || !adminData) return
-
-    setUpdating(true)
+    if (!user || !profile) return
 
     try {
-      let profilePictureUrl = adminData.profile_picture_url
+      let profilePictureUrl = profile.profile_picture_url
 
       // Upload new profile picture if provided
       if (profilePicture) {
@@ -104,38 +66,16 @@ export const AdminProfile: React.FC = () => {
         profilePictureUrl = publicUrl
       }
 
-      // Update common fields in users table
-      const { error: usersError } = await supabase
-        .from('users')
-        .update({
-          full_name: profileForm.full_name,
-          phone_no: profileForm.phone_no,
-          profile_picture_url: profilePictureUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
+      // Use the unified updateProfile function
+      updateProfile({
+        ...profileForm,
+        profile_picture_url: profilePictureUrl,
+      })
 
-      if (usersError) throw usersError
-
-      // Update admin-specific fields in admins table
-      const { error: adminError } = await supabase
-        .from('admins')
-        .update({
-          assigned_region: profileForm.assigned_region,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-
-      if (adminError) throw adminError
-
-      toast.success('Profile updated successfully')
       setProfilePicture(null)
-      await fetchAdminData()
     } catch (error) {
       console.error('Error updating profile:', error)
       toast.error('Failed to update profile')
-    } finally {
-      setUpdating(false)
     }
   }
 
@@ -175,7 +115,7 @@ export const AdminProfile: React.FC = () => {
     }
   }
 
-  if (loading) {
+  if (profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -183,7 +123,7 @@ export const AdminProfile: React.FC = () => {
     )
   }
 
-  if (!adminData) {
+  if (!profile) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-600">Unable to load profile data</p>
@@ -214,9 +154,9 @@ export const AdminProfile: React.FC = () => {
             <form onSubmit={handleProfileUpdate} className="space-y-6">
               <div className="flex items-center space-x-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={adminData.profile_picture_url} />
+                  <AvatarImage src={profile.profile_picture_url} />
                   <AvatarFallback>
-                    {adminData.full_name.split(' ').map(n => n[0]).join('')}
+                    {profile.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -252,7 +192,7 @@ export const AdminProfile: React.FC = () => {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    value={adminData.email}
+                    value={profile.email}
                     disabled
                     className="bg-gray-100"
                   />
@@ -280,8 +220,8 @@ export const AdminProfile: React.FC = () => {
                 </div>
               </div>
 
-              <Button type="submit" disabled={updating}>
-                {updating ? 'Updating...' : 'Save Changes'}
+              <Button type="submit" disabled={isUpdating}>
+                {isUpdating ? 'Updating...' : 'Save Changes'}
               </Button>
             </form>
           </CardContent>
